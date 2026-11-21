@@ -9,9 +9,9 @@
 
 ## 1. Cloud Deployment Status
 
-- **GitHub Repository:** Pending Connection
+- **GitHub Repository:** [subcrative-alt/CreativeFlow](https://github.com/subcrative-alt/CreativeFlow) (Connected & Initialized)
 - **Vercel Project:** Pending Link
-- **Latest Vercel Preview URL:** Not deployed yet (Awaiting GitHub link & Vercel project initialization)
+- **Latest Vercel Preview URL:** Not deployed yet (Awaiting Vercel project link)
 - **Production URL:** Not deployed yet
 
 ---
