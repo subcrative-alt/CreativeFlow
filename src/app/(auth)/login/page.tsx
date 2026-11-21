@@ -199,6 +199,16 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* Direct link to Swapon's World Hub */}
+          <div className="mt-4">
+            <a
+              href="/"
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+            >
+              <span>✨ স্বপনস ওয়ার্ল্ড টিম হাব সরাসরি খুলুন (লগইন ছাড়া) →</span>
+            </a>
+          </div>
+
           {/* Quick Demo Selector */}
           <div className="mt-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-2">
