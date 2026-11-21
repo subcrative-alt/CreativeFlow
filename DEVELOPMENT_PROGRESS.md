@@ -9,10 +9,10 @@
 
 ## 1. Cloud Deployment Status
 
-- **GitHub Repository:** [subcrative-alt/CreativeFlow](https://github.com/subcrative-alt/CreativeFlow) (Connected & Initialized)
-- **Vercel Project:** Pending Link
-- **Latest Vercel Preview URL:** Not deployed yet (Awaiting Vercel project link)
-- **Production URL:** Not deployed yet
+- **GitHub Repository:** [subcrative-alt/CreativeFlow](https://github.com/subcrative-alt/CreativeFlow) (Connected & Synchronized)
+- **Vercel Project:** creative-flow-ruby
+- **Latest Vercel Preview URL:** [https://creative-flow-ruby.vercel.app](https://creative-flow-ruby.vercel.app) (Live & Active)
+- **Production URL:** [https://creative-flow-ruby.vercel.app](https://creative-flow-ruby.vercel.app)
 
 ---
 

@@ -3,60 +3,126 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Sparkles, ArrowRight, Lock, Mail, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, Lock, Mail, AlertCircle, Eye, EyeOff, Loader2, UserPlus, CheckCircle2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setInfoMessage(null);
+
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+      if (isSignUp) {
+        // Sign up flow
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim() || cleanEmail.split("@")[0],
+            },
+          },
+        });
 
-      if (signInError) {
-        throw signInError;
-      }
+        if (signUpError) throw signUpError;
 
-      if (data.user) {
-        // Fetch role to route properly
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .single();
-
-        if (profile?.role === "creative_head") {
+        if (data.session) {
           router.push("/dashboard");
+          router.refresh();
+          return;
         } else {
-          router.push("/my-dashboard");
+          setInfoMessage("Account created! If you have email confirmation enabled in Supabase, please check your email or disable confirmation in Supabase Dashboard -> Auth -> Providers -> Email.");
         }
-        router.refresh();
+      } else {
+        // Sign in flow
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+        if (signInError) {
+          // If credentials fail, check if this is one of our demo team accounts and auto-provision it
+          if (cleanEmail.includes("creativeflow.com") || cleanEmail.startsWith("head@") || cleanEmail.startsWith("photo@") || cleanEmail.startsWith("editor")) {
+            const roleName = cleanEmail.startsWith("head")
+              ? "Creative Head (Admin)"
+              : cleanEmail.startsWith("photo")
+              ? "Lead Photographer"
+              : "Video Editor";
+
+            const { data: signUpData, error: autoSignError } = await supabase.auth.signUp({
+              email: cleanEmail,
+              password,
+              options: {
+                data: {
+                  full_name: roleName,
+                },
+              },
+            });
+
+            if (!autoSignError && signUpData?.session) {
+              // Successfully auto-created and logged in
+              const targetRoute = cleanEmail.startsWith("head") ? "/dashboard" : "/my-dashboard";
+              router.push(targetRoute);
+              router.refresh();
+              return;
+            }
+          }
+
+          throw signInError;
+        }
+
+        if (data.user) {
+          // Fetch role from profile
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", data.user.id)
+            .single();
+
+          if (profile?.role === "creative_head" || cleanEmail.startsWith("head")) {
+            router.push("/dashboard");
+          } else {
+            router.push("/my-dashboard");
+          }
+          router.refresh();
+        }
       }
     } catch (err: any) {
-      setError(err?.message || "Failed to authenticate. Please check your credentials.");
+      const msg = err?.message || "Authentication failed.";
+      if (msg.includes("Invalid login credentials")) {
+        setError(
+          "Invalid credentials or user not registered yet in Supabase Auth. Click 'Sign Up / Register' below to create this account, or run the SQL seed in your Supabase SQL Editor."
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   // Quick preset loader for initial creative team testing
-  const setDemoAccount = (demoEmail: string) => {
+  const selectDemoAccount = (demoEmail: string, demoName: string) => {
     setEmail(demoEmail);
     setPassword("CreativeFlow#2026");
+    setFullName(demoName);
     setError(null);
+    setInfoMessage(null);
   };
 
   return (
@@ -109,44 +175,61 @@ export default function LoginPage() {
       {/* Authentication Form Column */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-12">
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 p-8">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Welcome back</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Sign in with your workspace credentials
-            </p>
+          {/* Sign In vs Sign Up Toggle */}
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {isSignUp ? "Create Workspace Account" : "Welcome back"}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {isSignUp ? "Register a new creative team member" : "Sign in to your production workspace"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError(null);
+                setInfoMessage(null);
+              }}
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            >
+              {isSignUp ? "Sign In Instead" : "Register / Sign Up"}
+            </button>
           </div>
 
-          {/* Quick Demo Selector for QA */}
-          <div className="mt-6 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+          {/* Quick Demo Selector */}
+          <div className="mt-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-2">
               Select Demo Team Role:
             </span>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => setDemoAccount("head@creativeflow.com")}
-                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors"
+                onClick={() => selectDemoAccount("head@creativeflow.com", "Creative Head (Admin)")}
+                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
               >
                 👑 Creative Head
               </button>
               <button
                 type="button"
-                onClick={() => setDemoAccount("photo@creativeflow.com")}
-                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors"
+                onClick={() => selectDemoAccount("photo@creativeflow.com", "Lead Photographer")}
+                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
               >
                 📷 Photographer
               </button>
               <button
                 type="button"
-                onClick={() => setDemoAccount("editor1@creativeflow.com")}
-                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors"
+                onClick={() => selectDemoAccount("editor1@creativeflow.com", "Video Editor 01")}
+                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
               >
                 🎬 Video Editor 01
               </button>
               <button
                 type="button"
-                onClick={() => setDemoAccount("editor2@creativeflow.com")}
-                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors"
+                onClick={() => selectDemoAccount("editor2@creativeflow.com", "Video Editor 02")}
+                className="text-left px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-500 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
               >
                 🎬 Video Editor 02
               </button>
@@ -154,13 +237,36 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="mt-4 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-start gap-3 text-red-700 dark:text-red-400 text-xs">
+            <div className="mt-4 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-3 text-rose-700 dark:text-rose-400 text-xs">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
+          {infoMessage && (
+            <div className="mt-4 p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex items-start gap-3 text-blue-700 dark:text-blue-400 text-xs">
+              <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{infoMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAuth} className="mt-5 space-y-4">
+            {isSignUp && (
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Creative Head"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                 Work Email
@@ -183,12 +289,14 @@ export default function LoginPage() {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Password
                 </label>
-                <a
-                  href="/forgot-password"
-                  className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
-                >
-                  Forgot password?
-                </a>
+                {!isSignUp && (
+                  <a
+                    href="/forgot-password"
+                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+                  >
+                    Forgot password?
+                  </a>
+                )}
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -218,11 +326,11 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Signing in...</span>
+                  <span>{isSignUp ? "Creating account..." : "Signing in..."}</span>
                 </>
               ) : (
                 <>
-                  <span>Sign in to Dashboard</span>
+                  <span>{isSignUp ? "Register Account" : "Sign in to Dashboard"}</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
