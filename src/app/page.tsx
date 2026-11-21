@@ -48,6 +48,8 @@ import {
   FileCheck,
   Sun,
   Moon,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 // Team Roles for Swapon's World
@@ -96,7 +98,7 @@ export interface AuthSession {
   displayName: string;
 }
 
-// Initial Tasks with Realistic Production Details, Reference Links & Voiceover Scripts
+// Initial Production Tasks
 const INITIAL_TASKS: SwaponTask[] = [
   // 1. 🟡 আজকের জরুরি কাজ (Action Today - Amber)
   {
@@ -256,7 +258,7 @@ const INITIAL_TASKS: SwaponTask[] = [
   },
 ];
 
-// Initial Files with Separation of Review vs Approved
+// Initial Deliverables & Files
 const INITIAL_FILES: StudioFile[] = [
   {
     id: "file-vid-1",
@@ -359,6 +361,9 @@ export default function SwaponsWorldApp() {
   const [fileSearch, setFileSearch] = useState("");
   const [fileTypeFilter, setFileTypeFilter] = useState("all");
 
+  // Accordion Expand State for Script Text (Keeps Task rows sleek and uncluttered)
+  const [expandedScripts, setExpandedScripts] = useState<Record<string, boolean>>({});
+
   // Clipboard Feedback State
   const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
 
@@ -376,7 +381,7 @@ export default function SwaponsWorldApp() {
   const [newGearInfo, setNewGearInfo] = useState("");
   const [newIsUrgent, setNewIsUrgent] = useState(false);
 
-  // Edit Task Modal State (For accidental approval revert or editing)
+  // Edit Task Modal State
   const [editingTask, setEditingTask] = useState<SwaponTask | null>(null);
 
   // Add File Modal (For Team Deliverable Submission)
@@ -389,7 +394,7 @@ export default function SwaponsWorldApp() {
   const [newDriveUrl, setNewDriveUrl] = useState("");
   const [newFileNotes, setNewFileNotes] = useState("");
 
-  // Edit File Modal State (For accidental approval revert or editing)
+  // Edit File Modal State
   const [editingFile, setEditingFile] = useState<StudioFile | null>(null);
 
   const supabase = createClient();
@@ -416,6 +421,13 @@ export default function SwaponsWorldApp() {
     } else {
       document.documentElement.classList.remove("dark");
     }
+  };
+
+  const toggleScriptExpand = (taskId: string) => {
+    setExpandedScripts((prev) => ({
+      ...prev,
+      [taskId]: !prev[taskId],
+    }));
   };
 
   // Safe ID generator (UUID compliant)
@@ -531,7 +543,7 @@ export default function SwaponsWorldApp() {
     }
   };
 
-  // Handle Login (Case-insensitive & mobile auto-capitalize safe)
+  // Handle Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
@@ -645,13 +657,10 @@ export default function SwaponsWorldApp() {
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
         if (t.completed) {
-          // Switch to: হয় নাই / লাল
           return { ...t, completed: false, statusState: "not_done" as const };
         } else if (t.statusState === "not_done") {
-          // Switch to: আজকের কাজ / হলুদ
           return { ...t, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" as const, dueDate: "আজকের ভেতর (Today)" };
         } else {
-          // Switch to: সম্পন্ন / সবুজ
           return { ...t, completed: true, statusState: "completed" as const };
         }
       }
@@ -670,7 +679,7 @@ export default function SwaponsWorldApp() {
   };
 
   // =========================================================================
-  // SMART AUTOMATION ENGINE (অ্যাডমিনের জন্য অটোমেটিক কাজ সেট করা)
+  // SMART AUTOMATION ENGINE
   // =========================================================================
   const applyAutomationPreset = (presetType: "reels" | "voiceover" | "youtube" | "banner" | "catalog" | "shoot_outdoor" | "shoot_indoor") => {
     switch (presetType) {
@@ -965,53 +974,48 @@ export default function SwaponsWorldApp() {
     return t.assignee === session?.role;
   });
 
-  // Color Theme & Status Categorization Helper
+  // Sophisticated Minimalist Color Metadata
   const getTaskColorMeta = (task: SwaponTask) => {
     if (task.completed) {
       return {
-        badgeText: "✅ অ্যাপ্রুভড ও সম্পন্ন (Done)",
-        badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800",
-        borderAccent: "border-l-4 border-l-emerald-500",
-        cardBg: "bg-emerald-50/20 dark:bg-emerald-950/10",
+        badgeText: "সম্পন্ন",
+        badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+        borderAccent: "border-l-[3px] border-l-emerald-500",
         categoryType: "completed",
         dotColor: "bg-emerald-500",
       };
     }
     if (task.statusState === "not_done") {
       return {
-        badgeText: "🔴 কাজ হয় নাই / পেন্ডিং",
-        badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800",
-        borderAccent: "border-l-4 border-l-rose-500",
-        cardBg: "bg-rose-50/30 dark:bg-rose-950/20",
+        badgeText: "পেন্ডিং / বাকি",
+        badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+        borderAccent: "border-l-[3px] border-l-rose-500",
         categoryType: "not_done",
         dotColor: "bg-rose-500",
       };
     }
     if (task.isUrgent || task.deadlineCategory === "today") {
       return {
-        badgeText: "🟡 আজকের জরুরি কাজ (Must Do)",
-        badgeClass: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-700",
-        borderAccent: "border-l-4 border-l-amber-500",
-        cardBg: "bg-amber-50/30 dark:bg-amber-950/15",
+        badgeText: "আজকের জরুরি",
+        badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+        borderAccent: "border-l-[3px] border-l-amber-500",
         categoryType: "today",
         dotColor: "bg-amber-500",
       };
     }
     if (task.deadlineCategory === "7days" || task.deadlineCategory === "3days") {
       return {
-        badgeText: "🟣 আগামী ৭ দিনের ভেতর",
-        badgeClass: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-300 dark:border-purple-800",
-        borderAccent: "border-l-4 border-l-purple-500",
-        cardBg: "bg-purple-50/25 dark:bg-purple-950/15",
+        badgeText: "৭ দিনের ভেতর",
+        badgeClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+        borderAccent: "border-l-[3px] border-l-purple-500",
         categoryType: "week",
         dotColor: "bg-purple-500",
       };
     }
     return {
-      badgeText: "🔴 কাজ হয় নাই / বাকি",
-      badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800",
-      borderAccent: "border-l-4 border-l-rose-400",
-      cardBg: "bg-rose-50/20 dark:bg-rose-950/15",
+      badgeText: "বাকি",
+      badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+      borderAccent: "border-l-[3px] border-l-rose-400",
       categoryType: "not_done",
       dotColor: "bg-rose-500",
     };
@@ -1021,7 +1025,7 @@ export default function SwaponsWorldApp() {
   const pendingTasks = roleTasks.filter((t) => !t.completed);
   const approvedTasks = roleTasks.filter((t) => t.completed);
 
-  // Active Tasks based on Tab & Filter (Approved tab ignores pending color filters!)
+  // Active Tasks based on Tab & Filter
   const filteredTasks =
     taskSectionTab === "approved"
       ? approvedTasks
@@ -1063,37 +1067,38 @@ export default function SwaponsWorldApp() {
   // 1. MANDATORY LOGIN GATE FIRST
   if (!authChecked || !session) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center justify-center p-4 selection:bg-zinc-900 selection:text-white transition-colors duration-200">
-        <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex items-center justify-between pb-1">
-            <div className="h-6" />
+      <div className="min-h-screen bg-[#fafaf9] dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 flex items-center justify-center p-4 selection:bg-zinc-900 selection:text-white transition-colors duration-200">
+        <div className="w-full max-w-md bg-white dark:bg-[#141416] rounded-2xl border border-stone-200/80 dark:border-zinc-800/80 p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="flex items-center justify-end">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+              className="p-1.5 px-2 rounded-lg border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
               title={theme === "dark" ? "লাইট মোড চালু করুন" : "ডার্ক মোড চালু করুন"}
             >
-              {theme === "dark" ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-zinc-700" />}
-              <span className="text-[11px]">{theme === "dark" ? "লাইট মোড" : "ডার্ক মোড"}</span>
+              {theme === "dark" ? <Sun className="h-3 w-3 text-amber-400" /> : <Moon className="h-3 w-3 text-zinc-700" />}
+              <span className="text-[11px]">{theme === "dark" ? "লাইট" : "ডার্ক"}</span>
             </button>
           </div>
 
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-2.5">
             <div className="flex items-center justify-center px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 mx-auto w-fit shadow-xs">
               <img
                 src="/logo.png"
                 alt="স্বপনস ওয়ার্ল্ড লোগো"
-                className="h-10 sm:h-12 w-auto object-contain"
+                className="h-9 sm:h-10 w-auto object-contain"
               />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-zinc-950 dark:text-white">
-              স্বপনস ওয়ার্ল্ড স্টুডিও
-            </h1>
-            <p className="text-xs text-stone-500 dark:text-zinc-400">
-              প্রোডাকশন ও টিম ম্যানেজমেন্ট পোর্টাল
-            </p>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-zinc-950 dark:text-white">
+                স্বপনস ওয়ার্ল্ড স্টুডিও
+              </h1>
+              <p className="text-xs text-stone-500 dark:text-zinc-400 mt-0.5">
+                ক্রিয়েটিভ প্রোডাকশন ও টিম পোর্টাল
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold">
+          <div className="grid grid-cols-2 p-1 rounded-xl bg-stone-100 dark:bg-zinc-900 text-xs font-semibold">
             <button
               type="button"
               onClick={() => {
@@ -1101,10 +1106,10 @@ export default function SwaponsWorldApp() {
                 setLoginError("");
                 setPasswordInput("");
               }}
-              className={`py-2 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 loginTab === "team"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
-                  : "text-stone-500 hover:text-zinc-900"
+                  ? "bg-white dark:bg-[#18181b] text-zinc-950 dark:text-white shadow-2xs"
+                  : "text-stone-500 hover:text-zinc-900 dark:hover:text-white"
               }`}
             >
               <Users className="h-3.5 w-3.5" />
@@ -1118,10 +1123,10 @@ export default function SwaponsWorldApp() {
                 setLoginError("");
                 setPasswordInput("");
               }}
-              className={`py-2 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 loginTab === "admin"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
-                  : "text-stone-500 hover:text-zinc-900"
+                  ? "bg-white dark:bg-[#18181b] text-zinc-950 dark:text-white shadow-2xs"
+                  : "text-stone-500 hover:text-zinc-900 dark:hover:text-white"
               }`}
             >
               <Shield className="h-3.5 w-3.5" />
@@ -1134,12 +1139,12 @@ export default function SwaponsWorldApp() {
               <div className="space-y-3.5">
                 <div>
                   <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5 font-medium">
-                    আপনার পদবী নির্বাচন করুন
+                    পদবী নির্বাচন করুন
                   </label>
                   <select
                     value={teamRoleSelect}
                     onChange={(e) => setTeamRoleSelect(e.target.value as TeamMember)}
-                    className="w-full px-3 py-2.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/60 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950 dark:focus:border-zinc-700"
                   >
                     <option value="video_editor">🎬 ভিডিও এডিটর (সব এডিটিং কাজ একসাথে)</option>
                     <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
@@ -1162,8 +1167,8 @@ export default function SwaponsWorldApp() {
                     spellCheck={false}
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
-                    placeholder="টিম পাসওয়ার্ড লিখুন..."
-                    className="w-full px-3 py-2.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
+                    placeholder="পাসওয়ার্ড লিখুন..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/60 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950 dark:focus:border-zinc-700"
                   />
                   <div className="flex items-center justify-between text-[11px] text-stone-400 mt-1">
                     <span>ডিফল্ট টিম পাসওয়ার্ড:</span>
@@ -1173,13 +1178,13 @@ export default function SwaponsWorldApp() {
               </div>
             ) : (
               <div className="space-y-3.5">
-                <div className="p-3 rounded-lg bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/60 dark:border-zinc-700/60 space-y-1">
+                <div className="p-3 rounded-xl bg-stone-50 dark:bg-zinc-900/60 border border-stone-200/60 dark:border-zinc-800/60 space-y-1">
                   <div className="flex items-center gap-1.5 text-zinc-900 dark:text-white font-semibold">
-                    <Shield className="h-3.5 w-3.5 text-zinc-950 dark:text-white" />
+                    <Shield className="h-3.5 w-3.5 text-amber-500" />
                     <span>অ্যাডমিন অটোমেশন হাব</span>
                   </div>
                   <p className="text-[11px] text-stone-500 dark:text-zinc-400 leading-relaxed">
-                    অ্যাডমিন হিসেবে ১-ক্লিক অটোমেশন দিয়ে রেফারেন্স ভিডিও, ভয়েসওভার স্ক্রিপ্ট ও ডেডলাইন সেট করে কাজ বুঝিয়ে দিন।
+                    অ্যাডমিন হিসেবে ১-ক্লিক অটোমেশন দিয়ে রেফারেন্স লিংক, ভয়েসওভার স্ক্রিপ্ট ও ডেডলাইন সেট করে কাজ বুঝিয়ে দিন।
                   </p>
                 </div>
 
@@ -1196,7 +1201,7 @@ export default function SwaponsWorldApp() {
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder="অ্যাডমিন পাসওয়ার্ড লিখুন..."
-                    className="w-full px-3 py-2.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/60 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950 dark:focus:border-zinc-700"
                   />
                   <div className="flex items-center justify-between text-[11px] text-stone-400 mt-1">
                     <span>ডিফল্ট অ্যাডমিন পাসওয়ার্ড:</span>
@@ -1207,14 +1212,14 @@ export default function SwaponsWorldApp() {
             )}
 
             {loginError && (
-              <div className="p-2.5 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium">
+              <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium">
                 {loginError}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 text-xs font-semibold transition-all shadow-xs cursor-pointer"
             >
               {loginTab === "admin" ? "অ্যাডমিন প্যানেলে প্রবেশ →" : "কাজের বোর্ডে প্রবেশ করুন →"}
             </button>
@@ -1226,64 +1231,55 @@ export default function SwaponsWorldApp() {
 
   // 2. MAIN LOGGED-IN STUDIO INTERFACE
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased selection:bg-zinc-900 selection:text-white pb-24 transition-colors duration-200">
-      {/* Top Header Navigation */}
-      <header className="sticky top-0 z-40 bg-stone-50/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-stone-200 dark:border-zinc-800">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 antialiased selection:bg-zinc-900 selection:text-white pb-24 transition-colors duration-200">
+      {/* Top Header Navigation - Sleek & Compact */}
+      <header className="sticky top-0 z-40 bg-[#fafaf9]/90 dark:bg-[#0c0c0e]/90 backdrop-blur-md border-b border-stone-200/80 dark:border-zinc-800/80">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="h-8.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 shadow-2xs">
               <img
                 src="/logo.png"
-                alt="স্বপনস ওয়ার্ল্ড লোগো"
-                className="h-7 w-auto object-contain"
+                alt="স্বপনস ওয়ার্ল্ড"
+                className="h-6 w-auto object-contain"
               />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white">
+                <span className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white tracking-tight">
                   স্বপনস ওয়ার্ল্ড
                 </span>
-                <span className={`font-studio-mono text-[10px] px-2 py-0.5 rounded font-medium ${
-                  isHead
-                    ? "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                    : "bg-stone-200 dark:bg-zinc-800 text-stone-800 dark:text-zinc-200"
-                }`}>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 border border-stone-200/70 dark:border-zinc-700/70">
                   {session.displayName}
                 </span>
               </div>
-              <p className="text-[11px] text-stone-500 dark:text-zinc-400">
-                {isHead
-                  ? "অ্যাডমিন কন্ট্রোল • রেফারেন্স ভিডিও ও স্ক্রিপ্টসহ কাজ অ্যাসাইন ও তদারকি"
-                  : "টিম মেম্বার ভিউ • আজকের কাজ, স্ক্রিপ্ট কপি ও ড্রাইভ ফাইল জমা"}
-              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             {/* Real-time Clock */}
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-stone-100 dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 text-[11px] font-studio-mono text-stone-600 dark:text-zinc-400">
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 text-[11px] font-studio-mono text-stone-600 dark:text-zinc-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>DHAKA {dhakaTime || "15:30:00"}</span>
+              <span>{dhakaTime || "16:00:00"}</span>
             </div>
 
             {/* Dark / Light Mode Switcher */}
             <button
               onClick={toggleTheme}
-              className="p-2 sm:px-2.5 sm:py-1.5 rounded-lg border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+              className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
               title={theme === "dark" ? "লাইট মোড চালু করুন" : "ডার্ক মোড চালু করুন"}
             >
               {theme === "dark" ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-zinc-700" />}
-              <span className="hidden sm:inline">{theme === "dark" ? "লাইট" : "ডার্ক"}</span>
+              <span className="hidden sm:inline text-[11px]">{theme === "dark" ? "লাইট" : "ডার্ক"}</span>
             </button>
 
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer"
+              className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg text-xs font-medium border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1"
               title="লগআউট করুন"
             >
               <LogOut className="h-3 w-3" />
-              <span className="hidden sm:inline">লগআউট</span>
+              <span className="hidden sm:inline text-[11px]">লগআউট</span>
             </button>
 
             {/* Team Members Upload Button */}
@@ -1301,25 +1297,25 @@ export default function SwaponsWorldApp() {
             {isHead && (
               <button
                 onClick={() => setShowAddTaskModal(true)}
-                className="px-3.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               >
-                <Zap className="h-3.5 w-3.5 text-amber-400" />
+                <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                 <span className="hidden sm:inline">+ নতুন অ্যাসাইনমেন্ট (অটোমেশন)</span>
-                <span className="sm:hidden">+ অ্যাসাইনমেন্ট</span>
+                <span className="sm:hidden">+ কাজ দিন</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* If Admin: Department Filters */}
+        {/* If Admin: Department Filter Tabs */}
         {isHead && (
-          <div className="border-t border-stone-200/70 dark:border-zinc-800/80 bg-stone-100/60 dark:bg-zinc-900/60">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-              <span className="text-[11px] font-studio-mono uppercase text-stone-500 mr-2 shrink-0 font-medium">
-                ডিপার্টমেন্ট ভিউ:
+          <div className="border-t border-stone-200/70 dark:border-zinc-800/70 bg-stone-100/40 dark:bg-zinc-900/40">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
+              <span className="text-[11px] font-studio-mono uppercase text-stone-400 mr-2 shrink-0 font-medium">
+                ডিপার্টমেন্ট:
               </span>
               {[
-                { id: "all", label: "সবার কাজ (All Work)" },
+                { id: "all", label: "সবার কাজ (All)" },
                 { id: "video_editor", label: "🎬 ভিডিও এডিটর টিম" },
                 { id: "designer", label: "🎨 গ্রাফিক ডিজাইনার" },
                 { id: "videographer", label: "📹 সিনেমাটোগ্রাফার / শুট" },
@@ -1329,8 +1325,8 @@ export default function SwaponsWorldApp() {
                   onClick={() => setAdminViewFilter(m.id as TeamMember)}
                   className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
                     adminViewFilter === m.id
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-2xs"
-                      : "text-stone-600 dark:text-zinc-400 hover:bg-stone-200/60 dark:hover:bg-zinc-800"
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-2xs"
+                      : "text-stone-600 dark:text-zinc-400 hover:bg-stone-200/60 dark:hover:bg-zinc-800/80"
                   }`}
                 >
                   {m.label}
@@ -1342,162 +1338,161 @@ export default function SwaponsWorldApp() {
       </header>
 
       {/* Main Studio Body */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-7 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
         {/* ========================================================= */}
-        {/* SECTION 1: উপরে ড্যাশবোর্ড (TOP DASHBOARD SECTION)       */}
+        {/* SECTION 1: মিনিমালিস্ট ড্যাশবোর্ড ওভারভিউ                     */}
         {/* ========================================================= */}
         <section className="space-y-4">
-          {/* Color-Coded Status Overview Strip */}
-          <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-2xs">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
-              <div>
-                <div className="flex items-center gap-2 text-[11px] font-studio-mono uppercase tracking-wider text-stone-500 font-medium">
-                  <span>PRODUCTION STATUS OVERVIEW</span>
-                  <span>•</span>
-                  <span>{session.displayName}</span>
-                </div>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl sm:text-4xl font-bold font-studio-mono text-zinc-950 dark:text-white">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#141416] border border-stone-200/70 dark:border-zinc-800/80 shadow-2xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              {/* Progress Summary */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl sm:text-4xl font-bold font-studio-mono text-zinc-950 dark:text-white tracking-tight">
                     {completedTasks < 10 ? "০" + completedTasks : completedTasks}
                   </span>
-                  <span className="text-xl sm:text-2xl text-stone-400 font-light font-studio-mono">
-                    / {totalTasks < 10 ? "০" + totalTasks : totalTasks}
+                  <span className="text-lg text-stone-400 dark:text-zinc-500 font-light font-studio-mono">
+                    /{totalTasks < 10 ? "০" + totalTasks : totalTasks}
                   </span>
-                  <span className="text-sm font-medium text-stone-600 dark:text-zinc-400 ml-1">
-                    সম্পন্ন ({taskProgress}%)
-                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-white">
+                      প্রোডাকশন অগ্রগতি
+                    </span>
+                    <span className="text-[10px] font-studio-mono px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                      {taskProgress}% সম্পন্ন
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-36 sm:w-48 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                      style={{ width: `${taskProgress}%` }}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Distinct Color Metric Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs pt-3 md:pt-0">
-                {/* 1. Yellow/Amber: Today Action */}
-                <div
+              {/* 4 Sleek Status Filters */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                {/* 1. Today Action */}
+                <button
+                  type="button"
                   onClick={() => {
                     setTaskSectionTab("pending");
                     setStatusColorFilter(statusColorFilter === "today" ? "all" : "today");
                   }}
-                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                     statusColorFilter === "today" && taskSectionTab === "pending"
-                      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-500"
-                      : "border-amber-200/80 bg-amber-50/50 hover:bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20"
+                      ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/40"
+                      : "border-stone-200/70 dark:border-zinc-800/80 bg-stone-50/50 dark:bg-zinc-900/50 hover:bg-stone-100 dark:hover:bg-zinc-800/80 text-stone-700 dark:text-zinc-300"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-semibold">
+                  <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-amber-500" />
-                    <span>আজকের কাজ</span>
+                    <span className="font-medium text-[11px]">আজকের কাজ</span>
                   </div>
-                  <span className="text-lg font-bold font-studio-mono text-amber-900 dark:text-amber-200 block mt-0.5">
-                    {todayActionTasks} টি
+                  <span className="font-bold font-studio-mono text-amber-600 dark:text-amber-400">
+                    {todayActionTasks}
                   </span>
-                </div>
+                </button>
 
-                {/* 2. Red/Rose: Not Done / Pending */}
-                <div
+                {/* 2. Not Done / Pending */}
+                <button
+                  type="button"
                   onClick={() => {
                     setTaskSectionTab("pending");
                     setStatusColorFilter(statusColorFilter === "not_done" ? "all" : "not_done");
                   }}
-                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                     statusColorFilter === "not_done" && taskSectionTab === "pending"
-                      ? "border-rose-500 bg-rose-50 dark:bg-rose-950/40 ring-1 ring-rose-500"
-                      : "border-rose-200/80 bg-rose-50/50 hover:bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20"
+                      ? "border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/40"
+                      : "border-stone-200/70 dark:border-zinc-800/80 bg-stone-50/50 dark:bg-zinc-900/50 hover:bg-stone-100 dark:hover:bg-zinc-800/80 text-stone-700 dark:text-zinc-300"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 font-semibold">
+                  <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-rose-500" />
-                    <span>কাজ হয় নাই / পেন্ডিং</span>
+                    <span className="font-medium text-[11px]">কাজ হয় নাই</span>
                   </div>
-                  <span className="text-lg font-bold font-studio-mono text-rose-900 dark:text-rose-200 block mt-0.5">
-                    {notDoneTasks} টি
+                  <span className="font-bold font-studio-mono text-rose-600 dark:text-rose-400">
+                    {notDoneTasks}
                   </span>
-                </div>
+                </button>
 
-                {/* 3. Purple: 7 Days Pipeline */}
-                <div
+                {/* 3. Next 7 Days */}
+                <button
+                  type="button"
                   onClick={() => {
                     setTaskSectionTab("pending");
                     setStatusColorFilter(statusColorFilter === "week" ? "all" : "week");
                   }}
-                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                     statusColorFilter === "week" && taskSectionTab === "pending"
-                      ? "border-purple-500 bg-purple-50 dark:bg-purple-950/40 ring-1 ring-purple-500"
-                      : "border-purple-200/80 bg-purple-50/50 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-purple-950/20"
+                      ? "border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-300 ring-1 ring-purple-500/40"
+                      : "border-stone-200/70 dark:border-zinc-800/80 bg-stone-50/50 dark:bg-zinc-900/50 hover:bg-stone-100 dark:hover:bg-zinc-800/80 text-stone-700 dark:text-zinc-300"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-400 font-semibold">
+                  <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-purple-500" />
-                    <span>আগামী ৭ দিন</span>
+                    <span className="font-medium text-[11px]">৭ দিন</span>
                   </div>
-                  <span className="text-lg font-bold font-studio-mono text-purple-900 dark:text-purple-200 block mt-0.5">
-                    {weekTasks} টি
+                  <span className="font-bold font-studio-mono text-purple-600 dark:text-purple-400">
+                    {weekTasks}
                   </span>
-                </div>
+                </button>
 
-                {/* 4. Green/Emerald: Completed & Approved */}
-                <div
+                {/* 4. Completed & Approved */}
+                <button
+                  type="button"
                   onClick={() => {
                     setTaskSectionTab("approved");
                     setStatusColorFilter("all");
                   }}
-                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                     taskSectionTab === "approved"
-                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-500"
-                      : "border-emerald-200/80 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/40"
+                      : "border-stone-200/70 dark:border-zinc-800/80 bg-stone-50/50 dark:bg-zinc-900/50 hover:bg-stone-100 dark:hover:bg-zinc-800/80 text-stone-700 dark:text-zinc-300"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
+                  <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>অ্যাপ্রুভড ও সম্পন্ন</span>
+                    <span className="font-medium text-[11px]">সম্পন্ন</span>
                   </div>
-                  <span className="text-lg font-bold font-studio-mono text-emerald-900 dark:text-emerald-200 block mt-0.5">
-                    {completedTasks} টি
+                  <span className="font-bold font-studio-mono text-emerald-600 dark:text-emerald-400">
+                    {completedTasks}
                   </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Hairline Progress Bar */}
-            <div className="mt-5">
-              <div className="h-1.5 w-full bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                  style={{ width: `${taskProgress}%` }}
-                />
+                </button>
               </div>
             </div>
           </div>
 
           {/* ========================================================================= */}
-          {/* TASKS SECTION: SEPARATED INTO PENDING & APPROVED ARCHIVE                  */}
+          {/* TASKS SECTION: MINIMALIST ACCORDION-READY ROWS                           */}
           {/* ========================================================================= */}
-          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-5 space-y-4 shadow-2xs">
-            {/* Main Section Header + Two Distinct Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-zinc-800">
+          <div className="rounded-2xl bg-white dark:bg-[#141416] border border-stone-200/70 dark:border-zinc-800/80 p-5 space-y-4 shadow-2xs">
+            {/* Section Header + Clean Minimal Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-zinc-800/80">
               <div>
                 <h3 className="text-sm font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                   <span>{session.role === "video_editor" ? "ভিডিও এডিটিং কাজের হাব" : "স্টুডিও কাজের হাব"}</span>
-                  <span className="text-xs font-normal text-stone-500">
-                    ({roleTasks.length} টি মোট অ্যাসাইনমেন্ট)
+                  <span className="text-xs font-normal text-stone-400">
+                    ({roleTasks.length} টি অ্যাসাইনমেন্ট)
                   </span>
                 </h3>
-                <p className="text-[11px] text-stone-500">
-                  কাজ সম্পন্ন হলে স্বয়ংক্রিয়ভাবে অ্যাপ্রুভড আর্কাইভে জমা হবে। ভুল করে টিক দিলে এডিট বা রিভার্ট করে পুনরায় ফিরিয়ে নিতে পারবেন।
-                </p>
               </div>
 
               {/* TWO DISTINCT WORKSPACE TABS */}
-              <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold shrink-0">
+              <div className="flex items-center p-1 rounded-xl bg-stone-100 dark:bg-zinc-900 text-xs font-semibold shrink-0">
                 <button
                   type="button"
                   onClick={() => {
                     setTaskSectionTab("pending");
                     setStatusColorFilter("all");
                   }}
-                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     taskSectionTab === "pending"
-                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
-                      : "text-stone-500 hover:text-zinc-900"
+                      ? "bg-white dark:bg-[#18181b] text-zinc-950 dark:text-white shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <Hourglass className="h-3.5 w-3.5 text-amber-500" />
@@ -1510,48 +1505,48 @@ export default function SwaponsWorldApp() {
                     setTaskSectionTab("approved");
                     setStatusColorFilter("all");
                   }}
-                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     taskSectionTab === "approved"
-                      ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs"
-                      : "text-stone-500 hover:text-zinc-900"
+                      ? "bg-white dark:bg-[#18181b] text-emerald-600 dark:text-emerald-400 shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>অ্যাপ্রুভড ও সম্পন্ন আর্কাইভ ({approvedTasks.length})</span>
+                  <span>অ্যাপ্রুভড ও সম্পন্ন ({approvedTasks.length})</span>
                 </button>
               </div>
             </div>
 
             {/* Quick Filter Chips (Only in Pending Tab) */}
             {taskSectionTab === "pending" && (
-              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-medium pb-1 no-scrollbar">
+              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-medium pb-0.5 no-scrollbar">
                 <button
                   onClick={() => setStatusColorFilter("all")}
                   className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
                     statusColorFilter === "all"
-                      ? "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                      ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-2xs"
                       : "text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800"
                   }`}
                 >
-                  সব পেন্ডিং ({pendingTasks.length})
+                  সব ({pendingTasks.length})
                 </button>
                 <button
                   onClick={() => setStatusColorFilter("today")}
                   className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
                     statusColorFilter === "today"
                       ? "bg-amber-500 text-white"
-                      : "text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40"
+                      : "text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20"
                   }`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  আজকের জরুরি কাজ ({todayActionTasks})
+                  আজকের কাজ ({todayActionTasks})
                 </button>
                 <button
                   onClick={() => setStatusColorFilter("not_done")}
                   className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
                     statusColorFilter === "not_done"
                       ? "bg-rose-600 text-white"
-                      : "text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40"
+                      : "text-rose-700 dark:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20"
                   }`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
@@ -1562,7 +1557,7 @@ export default function SwaponsWorldApp() {
                   className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
                     statusColorFilter === "week"
                       ? "bg-purple-600 text-white"
-                      : "text-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40"
+                      : "text-purple-700 dark:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20"
                   }`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
@@ -1573,36 +1568,37 @@ export default function SwaponsWorldApp() {
 
             {/* Task List Rendering */}
             {filteredTasks.length === 0 ? (
-              <div className="p-8 text-center rounded-lg bg-stone-50/60 dark:bg-zinc-800/40 border border-stone-200/50 dark:border-zinc-800">
-                <p className="text-xs text-stone-500 font-medium">
+              <div className="p-8 text-center rounded-xl bg-stone-50/50 dark:bg-zinc-900/40 border border-stone-200/40 dark:border-zinc-800/60">
+                <p className="text-xs text-stone-400 font-medium">
                   {taskSectionTab === "approved"
                     ? "কোনো কাজ এখনো অ্যাপ্রুভড আর্কাইভে জমা হয়নি। কাজ সম্পন্ন হলে এখানে প্রদর্শিত হবে।"
                     : "এই ফিল্টারে কোনো পেন্ডিং কাজ পাওয়া যায়নি।"}
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {filteredTasks.map((task) => {
                   const meta = getTaskColorMeta(task);
+                  const isScriptOpen = !!expandedScripts[task.id];
 
                   return (
                     <div
                       key={task.id}
-                      className={`p-4 rounded-xl border transition-all ${meta.borderAccent} ${meta.cardBg} border-stone-200/70 dark:border-zinc-800 flex flex-col justify-between gap-3 group`}
+                      className={`p-3.5 sm:p-4 rounded-xl border transition-all ${meta.borderAccent} bg-white dark:bg-[#18181b]/80 border-stone-200/60 dark:border-zinc-800/80 hover:border-stone-300 dark:hover:border-zinc-700 flex flex-col justify-between gap-3 group`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         {/* Left: Checkbox + Title + Badges */}
                         <div className="flex items-start gap-3 min-w-0 flex-1">
                           <button
                             onClick={() => toggleTask(task.id)}
-                            className={`mt-0.5 h-5 w-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                            className={`mt-0.5 h-4.5 w-4.5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                               task.completed
                                 ? "bg-emerald-600 border-emerald-600 text-white"
-                                : "border-stone-300 dark:border-zinc-600 hover:border-zinc-950 bg-white dark:bg-zinc-800"
+                                : "border-stone-300 dark:border-zinc-600 hover:border-zinc-950 dark:hover:border-white bg-white dark:bg-zinc-800"
                             }`}
                             title={task.completed ? "পেন্ডিংয়ে ফেরত নিতে ক্লিক করুন" : "কাজ সম্পন্ন চিহ্নিত করতে ক্লিক করুন"}
                           >
-                            {task.completed && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                            {task.completed && <Check className="h-3 w-3 stroke-[3]" />}
                           </button>
 
                           <div className="min-w-0 space-y-1.5 flex-1">
@@ -1618,13 +1614,13 @@ export default function SwaponsWorldApp() {
                                 {task.title}
                               </span>
 
-                              {/* Color-Coded Status Badge */}
-                              <span className={`text-[10px] font-studio-mono px-2 py-0.5 rounded border font-semibold ${meta.badgeClass}`}>
+                              {/* Status Badge */}
+                              <span className={`text-[10px] font-studio-mono px-2 py-0.5 rounded-full border font-semibold ${meta.badgeClass}`}>
                                 {meta.badgeText}
                               </span>
 
                               {isHead && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-medium">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 font-medium">
                                   {task.assigneeName}
                                 </span>
                               )}
@@ -1635,18 +1631,30 @@ export default function SwaponsWorldApp() {
                                   href={task.referenceVideoUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-[11px] font-medium hover:bg-blue-100 transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-medium hover:bg-blue-500/20 transition-colors"
                                 >
-                                  <Film className="h-3 w-3" />
-                                  <span>🎥 রেফারেন্স ভিডিও ↗</span>
+                                  <Film className="h-2.5 w-2.5" />
+                                  <span>রেফারেন্স ↗</span>
                                 </a>
+                              )}
+
+                              {/* Voiceover Script Minimal Toggle Pill */}
+                              {task.scriptText && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleScriptExpand(task.id)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-medium hover:bg-amber-500/20 transition-colors cursor-pointer"
+                                >
+                                  <FileText className="h-2.5 w-2.5 text-amber-500" />
+                                  <span>{isScriptOpen ? "স্ক্রিপ্ট লুকান ▲" : "স্ক্রিপ্ট পড়ুন ও কপি করুন ▼"}</span>
+                                </button>
                               )}
                             </div>
 
                             {/* Brief / Notes */}
                             {task.notes && (
                               <p className="text-xs text-stone-600 dark:text-zinc-400 leading-relaxed font-normal">
-                                <strong className="text-zinc-800 dark:text-zinc-200 font-medium">নির্দেশনা:</strong> {task.notes}
+                                <strong className="text-zinc-800 dark:text-zinc-300 font-medium">নির্দেশনা:</strong> {task.notes}
                               </p>
                             )}
 
@@ -1661,17 +1669,17 @@ export default function SwaponsWorldApp() {
                               </div>
                             )}
 
-                            {/* Full Script / Voiceover Text Box with 1-Click Copy */}
-                            {task.scriptText && (
-                              <div className="mt-2 p-3 rounded-lg bg-stone-50 dark:bg-zinc-800/80 border border-stone-200/90 dark:border-zinc-700/80 space-y-1.5">
-                                <div className="flex items-center justify-between text-[11px] font-semibold text-stone-700 dark:text-zinc-200 pb-1 border-b border-stone-200/70 dark:border-zinc-700/60">
+                            {/* Expandable Voiceover Script Box */}
+                            {task.scriptText && isScriptOpen && (
+                              <div className="mt-2 p-3 rounded-xl bg-stone-50/80 dark:bg-zinc-900/80 border border-stone-200/80 dark:border-zinc-800 space-y-2 animate-in fade-in duration-150">
+                                <div className="flex items-center justify-between text-[11px] font-semibold text-stone-700 dark:text-zinc-300 pb-1.5 border-b border-stone-200/60 dark:border-zinc-800">
                                   <span className="flex items-center gap-1">
                                     <FileText className="h-3.5 w-3.5 text-amber-500" />
-                                    <span>স্ক্রিপ্ট / ভয়েসওভার টেক্সট ফাইল:</span>
+                                    <span>সম্পূর্ণ স্ক্রিপ্ট / ভয়েসওভার:</span>
                                   </span>
                                   <button
                                     onClick={() => handleCopyScript(task.id, task.scriptText || "")}
-                                    className="px-2 py-0.5 rounded bg-white hover:bg-stone-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 border border-stone-200 dark:border-zinc-600 text-zinc-900 dark:text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                                    className="px-2.5 py-0.5 rounded-md bg-white hover:bg-stone-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-stone-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                                     title="পুরো স্ক্রিপ্ট কপি করুন"
                                   >
                                     {copiedTaskId === task.id ? (
@@ -1696,39 +1704,39 @@ export default function SwaponsWorldApp() {
                         </div>
 
                         {/* Right: Due Date & Action Buttons */}
-                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-200/40">
-                          <span className="font-studio-mono text-[11px] text-stone-500 font-medium">
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-200/30">
+                          <span className="font-studio-mono text-[11px] text-stone-400 font-medium">
                             {task.dueDate}
                           </span>
 
-                          <div className="flex items-center gap-1.5">
-                            {/* If task is completed (accidental approval fix): Direct 1-Click Revert Button */}
+                          <div className="flex items-center gap-1">
+                            {/* If task is completed: Direct 1-Click Revert Button */}
                             {task.completed ? (
                               <button
                                 onClick={() => revertTaskToPending(task.id)}
-                                className="px-2.5 py-1 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 transition-colors cursor-pointer flex items-center gap-1"
+                                className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition-colors cursor-pointer flex items-center gap-1"
                                 title="ভুল করে সম্পন্ন হলে পেন্ডিংয়ে ফেরত নিন"
                               >
-                                <RotateCcw className="h-3 w-3" />
-                                <span>রিভার্ট (পেন্ডিং করুন)</span>
+                                <RotateCcw className="h-2.5 w-2.5" />
+                                <span>রিভার্ট</span>
                               </button>
                             ) : (
                               <button
                                 onClick={() => cycleTaskStatus(task.id)}
-                                className="px-2 py-1 rounded text-[11px] font-medium bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 hover:border-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                                className="px-2 py-0.5 rounded-lg text-[10px] font-medium bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
                                 title="স্ট্যাটাস পরিবর্তন করুন (হয় নাই / আজকের কাজ / সম্পন্ন)"
                               >
                                 স্ট্যাটাস ↺
                               </button>
                             )}
 
-                            {/* Edit Button (Every task has an edit button) */}
+                            {/* Edit Button */}
                             <button
                               onClick={() => setEditingTask(task)}
-                              className="px-2.5 py-1 rounded text-[11px] font-medium bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white border border-stone-200/80 dark:border-zinc-700 transition-colors cursor-pointer flex items-center gap-1"
+                              className="px-2 py-0.5 rounded-lg text-[10px] font-medium bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer flex items-center gap-1"
                               title="কাজের বিবরণ বা স্ট্যাটাস এডিট করুন"
                             >
-                              <Pencil className="h-3 w-3" />
+                              <Pencil className="h-2.5 w-2.5" />
                               <span>এডিট</span>
                             </button>
 
@@ -1738,7 +1746,7 @@ export default function SwaponsWorldApp() {
                                 className="p-1 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer"
                                 title="কাজ ডিলিট করুন"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="h-3 w-3" />
                               </button>
                             )}
                           </div>
@@ -1753,35 +1761,30 @@ export default function SwaponsWorldApp() {
         </section>
 
         {/* ========================================================= */}
-        {/* SECTION 2: নিচে সব ফাইলসমূহ (FILES & DELIVERABLES HUB)     */}
+        {/* SECTION 2: প্রোডাকশন ফাইলস ও ডেলিভারেবলস                   */}
         {/* ========================================================= */}
         <section className="space-y-4">
-          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-5 space-y-4 shadow-2xs">
+          <div className="rounded-2xl bg-white dark:bg-[#141416] border border-stone-200/70 dark:border-zinc-800/80 p-5 space-y-4 shadow-2xs">
             {/* Section Header + Two Distinct Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-zinc-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-zinc-800/80">
               <div>
                 <h3 className="text-sm font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                   <span>প্রোডাকশন ফাইলস ও ডেলিভারেবলস</span>
-                  <span className="text-xs font-normal text-stone-500">
+                  <span className="text-xs font-normal text-stone-400">
                     ({displayFiles.length} টি ফাইল)
                   </span>
                 </h3>
-                <p className="text-[11px] text-stone-500">
-                  {isHead
-                    ? "টিমের ফাইনাল রেন্ডার ও ড্রাইভ ফাইল। কাজ অ্যাপ্রুভ করলে স্বয়ংক্রিয়ভাবে কমপ্লিট আর্কাইভে জমা হবে।"
-                    : `শুধুমাত্র ${session.displayName}-এর প্রজেক্ট ও রেন্ডার ফাইলসমূহ।`}
-                </p>
               </div>
 
-              {/* TWO DISTINCT FILE TABS (Pending Review vs Approved Archive) */}
-              <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold shrink-0">
+              {/* TWO DISTINCT FILE TABS */}
+              <div className="flex items-center p-1 rounded-xl bg-stone-100 dark:bg-zinc-900 text-xs font-semibold shrink-0">
                 <button
                   type="button"
                   onClick={() => setFileSectionTab("pending")}
-                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     fileSectionTab === "pending"
-                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
-                      : "text-stone-500 hover:text-zinc-900"
+                      ? "bg-white dark:bg-[#18181b] text-zinc-950 dark:text-white shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <Hourglass className="h-3.5 w-3.5 text-amber-500" />
@@ -1791,24 +1794,24 @@ export default function SwaponsWorldApp() {
                 <button
                   type="button"
                   onClick={() => setFileSectionTab("approved")}
-                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     fileSectionTab === "approved"
-                      ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs"
-                      : "text-stone-500 hover:text-zinc-900"
+                      ? "bg-white dark:bg-[#18181b] text-emerald-600 dark:text-emerald-400 shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900 dark:hover:text-white"
                   }`}
                 >
                   <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>অ্যাপ্রুভড ও কমপ্লিট ফাইলস আর্কাইভ ({approvedFiles.length})</span>
+                  <span>অ্যাপ্রুভড ও কমপ্লিট ফাইলস ({approvedFiles.length})</span>
                 </button>
               </div>
             </div>
 
             {/* Search & Filter Toolbar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pt-1">
-              <span className="text-stone-500 text-[11px]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pt-0.5">
+              <span className="text-stone-400 text-[11px]">
                 {fileSectionTab === "pending"
-                  ? "⏳ এই সেকশনের ফাইলগুলো এখনও রিভিউ বা সংশোধনে আছে।"
-                  : "🏆 এই সেকশনের ফাইলগুলো সম্পন্ন ও হেড দ্বারা অ্যাপ্রুভড।"}
+                  ? "⏳ এই সেকশনের ফাইলগুলো রিভিউ বা সংশোধনে আছে।"
+                  : "🏆 এই সেকশনের ফাইলগুলো হেড দ্বারা অ্যাপ্রুভড ও ফাইনাল।"}
               </span>
 
               <div className="flex items-center gap-2">
@@ -1819,14 +1822,14 @@ export default function SwaponsWorldApp() {
                     value={fileSearch}
                     onChange={(e) => setFileSearch(e.target.value)}
                     placeholder="ফাইল খুঁজুন..."
-                    className="pl-8 pr-3 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900 w-36 sm:w-44"
+                    className="pl-8 pr-3 py-1 rounded-lg border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950 dark:focus:border-zinc-700 w-36 sm:w-44"
                   />
                 </div>
 
                 <select
                   value={fileTypeFilter}
                   onChange={(e) => setFileTypeFilter(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none"
+                  className="px-2.5 py-1 rounded-lg border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none"
                 >
                   <option value="all">সব টাইপ</option>
                   <option value="video">ভিডিও (.mp4)</option>
@@ -1839,21 +1842,21 @@ export default function SwaponsWorldApp() {
 
             {/* Files Grid Rendering */}
             {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).length === 0 ? (
-              <div className="p-10 text-center rounded-xl bg-stone-50/50 dark:bg-zinc-800/40 border border-stone-200/50 dark:border-zinc-800 space-y-1.5">
-                <HardDrive className="h-8 w-8 text-stone-300 dark:text-zinc-600 mx-auto" />
-                <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              <div className="p-8 text-center rounded-xl bg-stone-50/50 dark:bg-zinc-900/40 border border-stone-200/40 dark:border-zinc-800/60 space-y-1">
+                <HardDrive className="h-7 w-7 text-stone-300 dark:text-zinc-600 mx-auto" />
+                <h4 className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                   {fileSectionTab === "pending"
-                    ? "কোনো পেন্ডিং বা রিভিউ ফাইল নেই"
-                    : "কোনো ফাইল এখনো অ্যাপ্রুভড আর্কাইভে জমা হয়নি"}
+                    ? "কোনো পেন্ডিং ফাইল নেই"
+                    : "কোনো ফাইল এখনো অ্যাপ্রুভড আর্কাইভে নেই"}
                 </h4>
-                <p className="text-xs text-stone-400 max-w-sm mx-auto">
+                <p className="text-[11px] text-stone-400 max-w-sm mx-auto">
                   {fileSectionTab === "pending"
-                    ? "টিম মেম্বাররা নতুন রেন্ডার লিংক বা ফাইল জমা দিলে এখানে প্রদর্শিত হবে।"
+                    ? "টিম মেম্বাররা নতুন ফাইল জমা দিলে এখানে প্রদর্শিত হবে।"
                     : "পেন্ডিং ফাইল এপ্রুভ করলে সাথে সাথে এই আর্কাইভে স্থানান্তরিত হবে।"}
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).map((file) => {
                   const isVideo = file.fileType === "video";
                   const isProject = file.fileType === "project";
@@ -1862,24 +1865,24 @@ export default function SwaponsWorldApp() {
                   return (
                     <div
                       key={file.id}
-                      className="p-4.5 rounded-xl bg-stone-50/70 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/80 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
+                      className="p-4 rounded-xl bg-stone-50/50 dark:bg-zinc-900/40 border border-stone-200/60 dark:border-zinc-800/80 hover:border-stone-300 dark:hover:border-zinc-700 transition-all flex flex-col justify-between space-y-3"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 border border-stone-200/60 dark:border-zinc-600">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-7 w-7 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-stone-200/60 dark:border-zinc-700/60">
                               {isVideo ? (
-                                <Film className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                <Film className="h-3.5 w-3.5 text-blue-500" />
                               ) : isProject ? (
-                                <FileCode className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                <FileCode className="h-3.5 w-3.5 text-purple-500" />
                               ) : isFolder ? (
-                                <HardDrive className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                <HardDrive className="h-3.5 w-3.5 text-amber-500" />
                               ) : (
-                                <ImageIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <ImageIcon className="h-3.5 w-3.5 text-emerald-500" />
                               )}
                             </div>
                             <div>
-                              <span className="font-studio-mono text-[10px] uppercase text-stone-400 dark:text-zinc-400 block leading-tight">
+                              <span className="font-studio-mono text-[10px] uppercase text-stone-400 block leading-tight">
                                 {file.fileFormat} • {file.fileSize}
                               </span>
                               <span className="font-studio-mono text-[11px] font-semibold text-zinc-900 dark:text-white">
@@ -1889,65 +1892,63 @@ export default function SwaponsWorldApp() {
                           </div>
 
                           {/* Status Badge */}
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`text-[10px] font-studio-mono uppercase px-2 py-0.5 rounded border font-semibold ${
-                                file.status === "approved"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                                  : file.status === "needs_revision"
-                                  ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
-                                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
-                              }`}
-                            >
-                              {file.status === "approved"
-                                ? "অ্যাপ্রুভড"
+                          <span
+                            className={`text-[10px] font-studio-mono uppercase px-2 py-0.5 rounded-full border font-semibold ${
+                              file.status === "approved"
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                                 : file.status === "needs_revision"
-                                ? "সংশোধন প্রয়োজন"
-                                : "রিভিউ পেন্ডিং"}
-                            </span>
-                          </div>
+                                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                            }`}
+                          >
+                            {file.status === "approved"
+                              ? "অ্যাপ্রুভড"
+                              : file.status === "needs_revision"
+                              ? "সংশোধন"
+                              : "রিভিউ"}
+                          </span>
                         </div>
 
-                        <h4 className="text-sm font-semibold text-zinc-950 dark:text-white mt-2.5">
+                        <h4 className="text-xs font-semibold text-zinc-950 dark:text-white mt-2">
                           {file.title}
                         </h4>
 
                         {file.notes && (
-                          <p className="text-xs text-stone-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                          <p className="text-[11px] text-stone-500 dark:text-zinc-400 mt-1 leading-relaxed">
                             {file.notes}
                           </p>
                         )}
                       </div>
 
                       {/* Bottom Action Bar */}
-                      <div className="pt-2.5 border-t border-stone-200/80 dark:border-zinc-700/80 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 text-[11px] text-stone-400">
+                      <div className="pt-2 border-t border-stone-200/50 dark:border-zinc-800/60 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-[10px] text-stone-400">
                           <span>{file.ownerName}</span>
                           <span>•</span>
                           <span>{file.uploadedAt}</span>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           {/* If in Pending: Admin 1-Click Approve Button */}
                           {isHead && file.status !== "approved" && (
                             <button
                               onClick={() => toggleFileStatus(file.id, "approved")}
-                              className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                              title="ফাইল অ্যাপ্রুভ করুন — সরাসরি কমপ্লিট আর্কাইভে যাবে"
+                              className="px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                              title="ফাইল অ্যাপ্রুভ করুন"
                             >
-                              <Check className="h-3 w-3 stroke-[3]" />
-                              <span>অ্যাপ্রুভ করুন</span>
+                              <Check className="h-2.5 w-2.5 stroke-[3]" />
+                              <span>অ্যাপ্রুভ</span>
                             </button>
                           )}
 
-                          {/* If in Approved: Direct Revert Button in case of accidental approval */}
+                          {/* If in Approved: Direct Revert Button */}
                           {isHead && file.status === "approved" && (
                             <button
                               onClick={() => toggleFileStatus(file.id, "ready_for_review")}
-                              className="px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                              title="ভুল করে এপ্রুভ হলে পেন্ডিংয়ে ফেরত নিন"
+                              className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-[10px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                              title="পেন্ডিংয়ে ফেরত নিন"
                             >
-                              <RotateCcw className="h-3 w-3" />
+                              <RotateCcw className="h-2.5 w-2.5" />
                               <span>রিভার্ট</span>
                             </button>
                           )}
@@ -1955,10 +1956,10 @@ export default function SwaponsWorldApp() {
                           {/* Edit File Button */}
                           <button
                             onClick={() => setEditingFile(file)}
-                            className="px-2 py-1 rounded bg-white hover:bg-stone-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-200 border border-stone-200 dark:border-zinc-600 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                            title="ফাইলের তথ্য বা স্ট্যাটাস এডিট করুন"
+                            className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-[10px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                            title="ফাইল এডিট করুন"
                           >
-                            <Pencil className="h-3 w-3" />
+                            <Pencil className="h-2.5 w-2.5" />
                             <span>এডিট</span>
                           </button>
 
@@ -1966,9 +1967,9 @@ export default function SwaponsWorldApp() {
                             href={file.driveUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-2.5 py-1 rounded bg-white hover:bg-stone-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-900 dark:text-white border border-stone-200 dark:border-zinc-600 text-xs font-medium flex items-center gap-1 transition-colors"
+                            className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-[10px] font-medium flex items-center gap-1 transition-colors"
                           >
-                            <ExternalLink className="h-3 w-3" />
+                            <ExternalLink className="h-2.5 w-2.5" />
                             <span>ড্রাইভ</span>
                           </a>
 
@@ -1997,11 +1998,11 @@ export default function SwaponsWorldApp() {
       {/* ========================================================================= */}
       {showAddTaskModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800 shrink-0">
+          <div className="w-full max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-[#141416] rounded-2xl shadow-xl border border-stone-200/80 dark:border-zinc-800/80 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-zinc-800 shrink-0">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-amber-500" />
+                  <Zap className="h-4 w-4 text-amber-500 fill-amber-500" />
                   <span>স্মার্ট অটোমেশন — নতুন কাজ বুঝিয়ে দিন</span>
                 </h3>
                 <p className="text-xs text-stone-400">
@@ -2018,75 +2019,75 @@ export default function SwaponsWorldApp() {
 
             <div className="overflow-y-auto pr-1 space-y-4 flex-1">
               {/* 1-CLICK AUTOMATION PRESETS */}
-              <div className="p-3 rounded-xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/80 space-y-2">
+              <div className="p-3 rounded-xl bg-stone-50/60 dark:bg-zinc-900/60 border border-stone-200/60 dark:border-zinc-800/60 space-y-2">
                 <span className="text-[11px] font-studio-mono uppercase tracking-wider text-stone-500 font-semibold block">
-                  ⚡ ১-ক্লিক অটোমেশন প্রিসেট (One-Click Auto Templates):
+                  ⚡ ১-ক্লিক অটোমেশন প্রিসেট:
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => applyAutomationPreset("reels")}
-                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 dark:border-amber-900/60 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
+                    className="p-2 rounded-lg bg-white dark:bg-[#18181b] border border-amber-200 dark:border-amber-900/40 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
                   >
                     <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
                       📱 রিলস ও শর্টস (৯:১৬)
                     </span>
-                    <span className="text-[10px] text-stone-500 block">ভিডিও + স্ক্রিপ্ট অটো</span>
+                    <span className="text-[10px] text-stone-400 block">ভিডিও + স্ক্রিপ্ট অটো</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyAutomationPreset("voiceover")}
-                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-blue-200 dark:border-blue-900/60 hover:border-blue-500 text-left transition-all cursor-pointer shadow-2xs group"
+                    className="p-2 rounded-lg bg-white dark:bg-[#18181b] border border-blue-200 dark:border-blue-900/40 hover:border-blue-500 text-left transition-all cursor-pointer shadow-2xs group"
                   >
                     <span className="text-xs font-bold text-blue-900 dark:text-blue-300 block">
                       🎙️ ভয়েসওভার ও সাউন্ড
                     </span>
-                    <span className="text-[10px] text-stone-500 block">পূর্ণ স্ক্রিপ্ট সহ</span>
+                    <span className="text-[10px] text-stone-400 block">পূর্ণ স্ক্রিপ্ট সহ</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyAutomationPreset("youtube")}
-                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-purple-200 dark:border-purple-900/60 hover:border-purple-500 text-left transition-all cursor-pointer shadow-2xs group"
+                    className="p-2 rounded-lg bg-white dark:bg-[#18181b] border border-purple-200 dark:border-purple-900/40 hover:border-purple-500 text-left transition-all cursor-pointer shadow-2xs group"
                   >
                     <span className="text-xs font-bold text-purple-900 dark:text-purple-300 block">
                       📺 ইউটিউব ফুল ভিডিও
                     </span>
-                    <span className="text-[10px] text-stone-500 block">আগামী ৭ দিনের ভেতর</span>
+                    <span className="text-[10px] text-stone-400 block">আগামী ৭ দিনের ভেতর</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyAutomationPreset("banner")}
-                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-emerald-200 dark:border-emerald-900/60 hover:border-emerald-500 text-left transition-all cursor-pointer shadow-2xs group"
+                    className="p-2 rounded-lg bg-white dark:bg-[#18181b] border border-emerald-200 dark:border-emerald-900/40 hover:border-emerald-500 text-left transition-all cursor-pointer shadow-2xs group"
                   >
                     <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 block">
                       🎨 সোশ্যাল ব্যানার সেট
                     </span>
-                    <span className="text-[10px] text-stone-500 block">আজকের কাজ</span>
+                    <span className="text-[10px] text-stone-400 block">আজকের কাজ</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyAutomationPreset("catalog")}
-                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-stone-200 hover:border-zinc-500 text-left transition-all cursor-pointer shadow-2xs group"
+                    className="p-2 rounded-lg bg-white dark:bg-[#18181b] border border-stone-200 dark:border-zinc-800 hover:border-zinc-500 text-left transition-all cursor-pointer shadow-2xs group"
                   >
                     <span className="text-xs font-bold text-zinc-900 dark:text-white block">
                       📖 ক্যাটালগ ও ফটো
                     </span>
-                    <span className="text-[10px] text-stone-500 block">৭ দিনের শিডিউল</span>
+                    <span className="text-[10px] text-stone-400 block">৭ দিনের শিডিউল</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyAutomationPreset("shoot_outdoor")}
-                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
+                    className="p-2 rounded-lg bg-white dark:bg-[#18181b] border border-amber-200 dark:border-amber-900/40 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
                   >
                     <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
                       📹 আউটডোর শুট
                     </span>
-                    <span className="text-[10px] text-stone-500 block">আজ দুপুর ২:৩০ PM</span>
+                    <span className="text-[10px] text-stone-400 block">আজ দুপুর ২:৩০ PM</span>
                   </button>
                 </div>
               </div>
@@ -2094,52 +2095,52 @@ export default function SwaponsWorldApp() {
               {/* AUTOMATED TIMELINE SWITCHER */}
               <div className="space-y-1.5">
                 <label className="block text-zinc-700 dark:text-zinc-300 font-semibold text-xs">
-                  কখন শেষ করতে হবে? (অটোমেশন ডেডলাইন)
+                  কখন শেষ করতে হবে?
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   <button
                     type="button"
                     onClick={() => applyTimelinePreset("today")}
-                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-xl border font-semibold transition-all cursor-pointer ${
                       newCategory === "today"
-                        ? "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
-                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                     }`}
                   >
-                    ⚡ আজকের কাজ (Today)
+                    ⚡ আজকের কাজ
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyTimelinePreset("tomorrow")}
-                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-xl border font-semibold transition-all cursor-pointer ${
                       newCategory === "tomorrow"
-                        ? "border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200"
-                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                        ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                     }`}
                   >
-                    📅 কালকের কাজ (Tomorrow)
+                    📅 কালকের কাজ
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyTimelinePreset("7days")}
-                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-xl border font-semibold transition-all cursor-pointer ${
                       newCategory === "7days"
-                        ? "border-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-950 dark:text-purple-200"
-                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                        ? "border-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-300"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                     }`}
                   >
-                    🟣 আগামী ৭ দিন (7 Days)
+                    🟣 আগামী ৭ দিন
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyTimelinePreset("15days")}
-                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-xl border font-semibold transition-all cursor-pointer ${
                       newCategory === "15days"
-                        ? "border-zinc-950 bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                        ? "border-zinc-950 bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                     }`}
                   >
                     🏆 ১৫ দিনের প্রজেক্ট
@@ -2159,7 +2160,7 @@ export default function SwaponsWorldApp() {
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="যেমন: নতুন ঈদ ক্যাম্পেইনের রিলস এডিটিং"
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950 dark:focus:border-zinc-700"
                   />
                 </div>
 
@@ -2175,7 +2176,7 @@ export default function SwaponsWorldApp() {
                         else if (val === "designer") setNewDepartment("design");
                         else if (val === "videographer") setNewDepartment("shoot");
                       }}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                     >
                       <option value="video_editor">🎬 ভিডিও এডিটর (সব এডিটর একসাথে দেখবে)</option>
                       <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
@@ -2190,7 +2191,7 @@ export default function SwaponsWorldApp() {
                       value={newDueDate}
                       onChange={(e) => setNewDueDate(e.target.value)}
                       placeholder="যেমন: আজকের ভেতর (Today)"
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -2205,8 +2206,8 @@ export default function SwaponsWorldApp() {
                     type="url"
                     value={newReferenceVideoUrl}
                     onChange={(e) => setNewReferenceVideoUrl(e.target.value)}
-                    placeholder="https://youtube.com/shorts/... অথবা গুগল ড্রাইভ রেফারেন্স ভিডিও লিংক"
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    placeholder="https://youtube.com/shorts/... অথবা গুগল ড্রাইভ রেফারেন্স লিংক"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                   />
                 </div>
 
@@ -2221,7 +2222,7 @@ export default function SwaponsWorldApp() {
                     value={newScriptText}
                     onChange={(e) => setNewScriptText(e.target.value)}
                     placeholder="ভয়েসওভারের পুরো ডায়ালগ, হুক, বা টেক্সট স্ক্রিপ্ট এখানে পেস্ট করুন। টিম মেম্বাররা সরাসরি এটি কপি করতে পারবেন..."
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white leading-relaxed font-sans"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white leading-relaxed font-sans"
                   />
                 </div>
 
@@ -2233,7 +2234,7 @@ export default function SwaponsWorldApp() {
                       value={newLocation}
                       onChange={(e) => setNewLocation(e.target.value)}
                       placeholder="যেমন: ধানমন্ডি লেক, দুপুর ২:৩০ PM"
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                     />
                   </div>
                 )}
@@ -2247,7 +2248,7 @@ export default function SwaponsWorldApp() {
                     value={newNotes}
                     onChange={(e) => setNewNotes(e.target.value)}
                     placeholder="কাটস স্টাইল, কোন ফুটেজ ব্যবহার করবে বা ড্রাইভ লিংক বুঝিয়ে দিন..."
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                   />
                 </div>
 
@@ -2265,7 +2266,7 @@ export default function SwaponsWorldApp() {
               </form>
             </div>
 
-            <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
+            <div className="pt-3 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowAddTaskModal(false)}
@@ -2276,7 +2277,7 @@ export default function SwaponsWorldApp() {
               <button
                 type="submit"
                 form="add-task-form"
-                className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+                className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
               >
                 কাজ অ্যাসাইন করুন
               </button>
@@ -2286,12 +2287,12 @@ export default function SwaponsWorldApp() {
       )}
 
       {/* ========================================================================= */}
-      {/* EDIT TASK MODAL (FOR EDITING & ACCIDENTAL APPROVAL REVERT)                */}
+      {/* EDIT TASK MODAL                                                          */}
       {/* ========================================================================= */}
       {editingTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800 shrink-0">
+          <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-[#141416] rounded-2xl shadow-xl border border-stone-200/80 dark:border-zinc-800/80 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-zinc-800 shrink-0">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                   <Pencil className="h-4 w-4 text-blue-500" />
@@ -2318,11 +2319,11 @@ export default function SwaponsWorldApp() {
                     required
                     value={editingTask.title}
                     onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                   />
                 </div>
 
-                {/* Status Switcher (Allows reverting accidental approval) */}
+                {/* Status Switcher */}
                 <div>
                   <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
                     কাজের অবস্থা / স্ট্যাটাস (Status)
@@ -2331,10 +2332,10 @@ export default function SwaponsWorldApp() {
                     <button
                       type="button"
                       onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: "not_done" })}
-                      className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
                         !editingTask.completed && editingTask.statusState === "not_done"
-                          ? "border-rose-500 bg-rose-50 text-rose-900 font-semibold dark:bg-rose-950 dark:text-rose-200"
-                          : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                          ? "border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300 font-semibold"
+                          : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                       }`}
                     >
                       🔴 কাজ হয় নাই / বাকি
@@ -2343,10 +2344,10 @@ export default function SwaponsWorldApp() {
                     <button
                       type="button"
                       onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" })}
-                      className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
                         !editingTask.completed && editingTask.statusState !== "not_done"
-                          ? "border-amber-500 bg-amber-50 text-amber-900 font-semibold dark:bg-amber-950 dark:text-amber-200"
-                          : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                          ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold"
+                          : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                       }`}
                     >
                       🟡 আজকের কাজ / পেন্ডিং
@@ -2355,10 +2356,10 @@ export default function SwaponsWorldApp() {
                     <button
                       type="button"
                       onClick={() => setEditingTask({ ...editingTask, completed: true, statusState: "completed" })}
-                      className={`p-2 rounded-lg border text-left transition-all cursor-pointer col-span-2 sm:col-span-1 ${
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer col-span-2 sm:col-span-1 ${
                         editingTask.completed
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold dark:bg-emerald-950 dark:text-emerald-200"
-                          : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold"
+                          : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                       }`}
                     >
                       🟢 অ্যাপ্রুভড ও সম্পন্ন
@@ -2375,7 +2376,7 @@ export default function SwaponsWorldApp() {
                     value={editingTask.referenceVideoUrl || ""}
                     onChange={(e) => setEditingTask({ ...editingTask, referenceVideoUrl: e.target.value })}
                     placeholder="https://youtube.com/shorts/..."
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                   />
                 </div>
 
@@ -2388,7 +2389,7 @@ export default function SwaponsWorldApp() {
                     value={editingTask.scriptText || ""}
                     onChange={(e) => setEditingTask({ ...editingTask, scriptText: e.target.value })}
                     placeholder="সম্পূর্ণ স্ক্রিপ্ট এখানে পেস্ট করুন..."
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white font-sans"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white font-sans"
                   />
                 </div>
 
@@ -2399,7 +2400,7 @@ export default function SwaponsWorldApp() {
                       type="text"
                       value={editingTask.dueDate}
                       onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                     />
                   </div>
 
@@ -2418,7 +2419,7 @@ export default function SwaponsWorldApp() {
                         };
                         setEditingTask({ ...editingTask, assignee: val, assigneeName: names[val] });
                       }}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                     >
                       <option value="video_editor">🎬 ভিডিও এডিটর</option>
                       <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
@@ -2433,13 +2434,13 @@ export default function SwaponsWorldApp() {
                     rows={2}
                     value={editingTask.notes || ""}
                     onChange={(e) => setEditingTask({ ...editingTask, notes: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                   />
                 </div>
               </form>
             </div>
 
-            <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
+            <div className="pt-3 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setEditingTask(null)}
@@ -2450,7 +2451,7 @@ export default function SwaponsWorldApp() {
               <button
                 type="submit"
                 form="edit-task-form"
-                className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+                className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
               >
                 পরিবর্তন সেভ করুন
               </button>
@@ -2464,8 +2465,8 @@ export default function SwaponsWorldApp() {
       {/* ========================================================================= */}
       {showAddFileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
+          <div className="w-full max-w-lg bg-white dark:bg-[#141416] rounded-2xl shadow-xl border border-stone-200/80 dark:border-zinc-800/80 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-zinc-800">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white">
                   নতুন ডেলিভারেবল বা ড্রাইভ লিংক জমা দিন
@@ -2491,7 +2492,7 @@ export default function SwaponsWorldApp() {
                   value={newFileTitle}
                   onChange={(e) => setNewFileTitle(e.target.value)}
                   placeholder="যেমন: সামার রিলস ফাইনাল রেন্ডার ড্রাফট ৩"
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-sm text-zinc-900 dark:text-white"
                 />
               </div>
 
@@ -2504,7 +2505,7 @@ export default function SwaponsWorldApp() {
                     value={newFileName}
                     onChange={(e) => setNewFileName(e.target.value)}
                     placeholder="যেমন: Summer_Reels_V3_4K.mp4"
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                   />
                 </div>
 
@@ -2513,7 +2514,7 @@ export default function SwaponsWorldApp() {
                   <select
                     value={newFileType}
                     onChange={(e) => setNewFileType(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                   >
                     <option value="video">ভিডিও (.mp4)</option>
                     <option value="project">প্রজেক্ট (.prproj / .aep)</option>
@@ -2531,7 +2532,7 @@ export default function SwaponsWorldApp() {
                   value={newDriveUrl}
                   onChange={(e) => setNewDriveUrl(e.target.value)}
                   placeholder="https://drive.google.com/..."
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                 />
               </div>
 
@@ -2542,11 +2543,11 @@ export default function SwaponsWorldApp() {
                   value={newFileNotes}
                   onChange={(e) => setNewFileNotes(e.target.value)}
                   placeholder="যেমন: কালার গ্রেডিং ও অডিও নরম্যালাইজ করা হয়েছে..."
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                 />
               </div>
 
-              <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowAddFileModal(false)}
@@ -2556,7 +2557,7 @@ export default function SwaponsWorldApp() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+                  className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
                 >
                   ফাইল জমা দিন
                 </button>
@@ -2567,12 +2568,12 @@ export default function SwaponsWorldApp() {
       )}
 
       {/* ========================================================================= */}
-      {/* EDIT FILE MODAL (FOR EDITING & ACCIDENTAL APPROVAL REVERT)                */}
+      {/* EDIT FILE MODAL                                                          */}
       {/* ========================================================================= */}
       {editingFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
+          <div className="w-full max-w-lg bg-white dark:bg-[#141416] rounded-2xl shadow-xl border border-stone-200/80 dark:border-zinc-800/80 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-zinc-800">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                   <Pencil className="h-4 w-4 text-blue-500" />
@@ -2596,7 +2597,7 @@ export default function SwaponsWorldApp() {
                   required
                   value={editingFile.title}
                   onChange={(e) => setEditingFile({ ...editingFile, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                 />
               </div>
 
@@ -2609,10 +2610,10 @@ export default function SwaponsWorldApp() {
                   <button
                     type="button"
                     onClick={() => setEditingFile({ ...editingFile, status: "ready_for_review" })}
-                    className={`p-2 rounded-lg border text-center transition-all cursor-pointer ${
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       editingFile.status === "ready_for_review"
-                        ? "border-amber-500 bg-amber-50 text-amber-900 font-semibold dark:bg-amber-950 dark:text-amber-200"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                     }`}
                   >
                     ⏳ রিভিউ পেন্ডিং
@@ -2621,22 +2622,22 @@ export default function SwaponsWorldApp() {
                   <button
                     type="button"
                     onClick={() => setEditingFile({ ...editingFile, status: "needs_revision" })}
-                    className={`p-2 rounded-lg border text-center transition-all cursor-pointer ${
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       editingFile.status === "needs_revision"
-                        ? "border-rose-500 bg-rose-50 text-rose-900 font-semibold dark:bg-rose-950 dark:text-rose-200"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                        ? "border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300 font-semibold"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                     }`}
                   >
-                    ⚠️ সংশোধন প্রয়োজন
+                    ⚠️ সংশোধন
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setEditingFile({ ...editingFile, status: "approved" })}
-                    className={`p-2 rounded-lg border text-center transition-all cursor-pointer ${
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       editingFile.status === "approved"
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold dark:bg-emerald-950 dark:text-emerald-200"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold"
+                        : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-700 dark:text-zinc-300 hover:bg-stone-100"
                     }`}
                   >
                     🏆 অ্যাপ্রুভড
@@ -2651,7 +2652,7 @@ export default function SwaponsWorldApp() {
                   required
                   value={editingFile.driveUrl}
                   onChange={(e) => setEditingFile({ ...editingFile, driveUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                 />
               </div>
 
@@ -2661,11 +2662,11 @@ export default function SwaponsWorldApp() {
                   rows={2}
                   value={editingFile.notes || ""}
                   onChange={(e) => setEditingFile({ ...editingFile, notes: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900 text-zinc-900 dark:text-white"
                 />
               </div>
 
-              <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingFile(null)}
@@ -2675,7 +2676,7 @@ export default function SwaponsWorldApp() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+                  className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
                 >
                   পরিবর্তন সেভ করুন
                 </button>
