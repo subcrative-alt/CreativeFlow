@@ -46,6 +46,8 @@ import {
   Archive,
   Hourglass,
   FileCheck,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 // Team Roles for Swapon's World
@@ -329,6 +331,9 @@ const INITIAL_FILES: StudioFile[] = [
 ];
 
 export default function SwaponsWorldApp() {
+  // Theme State (Dark / Light Studio Mode)
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
   // Authentication State
   const [session, setSession] = useState<AuthSession | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -388,6 +393,38 @@ export default function SwaponsWorldApp() {
   const [editingFile, setEditingFile] = useState<StudioFile | null>(null);
 
   const supabase = createClient();
+
+  // Initialize Theme
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("swapons_world_theme") as "light" | "dark" | null;
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const activeTheme = savedTheme || (prefersDark ? "dark" : "light");
+    setTheme(activeTheme);
+    if (activeTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("swapons_world_theme", nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  // Safe ID generator (UUID compliant)
+  const generateId = (prefix: string) => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  };
 
   // Load Session & LocalStorage
   useEffect(() => {
@@ -455,15 +492,54 @@ export default function SwaponsWorldApp() {
     return () => clearInterval(timer);
   }, []);
 
-  // Handle Login
+  // Robust Textarea Fallback for Clipboard Copy
+  const fallbackCopyText = (text: string) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const handleCopyScript = (taskId: string, text: string) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          setCopiedTaskId(taskId);
+          setTimeout(() => setCopiedTaskId(null), 2000);
+        })
+        .catch(() => {
+          fallbackCopyText(text);
+          setCopiedTaskId(taskId);
+          setTimeout(() => setCopiedTaskId(null), 2000);
+        });
+    } else {
+      fallbackCopyText(text);
+      setCopiedTaskId(taskId);
+      setTimeout(() => setCopiedTaskId(null), 2000);
+    }
+  };
+
+  // Handle Login (Case-insensitive & mobile auto-capitalize safe)
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
 
-    const cleanPass = passwordInput.trim();
+    const cleanPass = passwordInput.trim().toLowerCase();
 
     if (loginTab === "admin") {
-      if (cleanPass === "admin123" || cleanPass === "swapon123" || cleanPass === "CreativeFlow#2026" || cleanPass === "admin") {
+      if (cleanPass === "admin123" || cleanPass === "swapon123" || cleanPass === "creativeflow#2026" || cleanPass === "admin") {
         const adminSession: AuthSession = {
           role: "head",
           isAdmin: true,
@@ -514,15 +590,6 @@ export default function SwaponsWorldApp() {
   const updateFiles = (newFileList: StudioFile[]) => {
     setFiles(newFileList);
     localStorage.setItem("swapons_world_files", JSON.stringify(newFileList));
-  };
-
-  // Copy Script to Clipboard
-  const handleCopyScript = (taskId: string, text: string) => {
-    if (navigator?.clipboard) {
-      navigator.clipboard.writeText(text);
-      setCopiedTaskId(taskId);
-      setTimeout(() => setCopiedTaskId(null), 2000);
-    }
   };
 
   // Toggle Task Complete (Move between Pending & Approved Archive)
@@ -746,7 +813,7 @@ export default function SwaponsWorldApp() {
     };
 
     const newTask: SwaponTask = {
-      id: "task-" + Date.now(),
+      id: generateId("task"),
       title: newTitle.trim(),
       assignee: newAssignee,
       assigneeName: assigneeNames[newAssignee],
@@ -828,7 +895,7 @@ export default function SwaponsWorldApp() {
     const targetOwner = session?.isAdmin ? newAssignee : (session?.role || "video_editor");
 
     const newFileItem: StudioFile = {
-      id: "file-" + Date.now(),
+      id: generateId("file"),
       title: newFileTitle.trim(),
       fileName: newFileName.trim(),
       fileType: newFileType,
@@ -954,14 +1021,15 @@ export default function SwaponsWorldApp() {
   const pendingTasks = roleTasks.filter((t) => !t.completed);
   const approvedTasks = roleTasks.filter((t) => t.completed);
 
-  // Active Tasks based on Tab & Filter
-  const tasksInActiveSection = taskSectionTab === "pending" ? pendingTasks : approvedTasks;
-
-  const filteredTasks = tasksInActiveSection.filter((t) => {
-    if (statusColorFilter === "all") return true;
-    const meta = getTaskColorMeta(t);
-    return meta.categoryType === statusColorFilter;
-  });
+  // Active Tasks based on Tab & Filter (Approved tab ignores pending color filters!)
+  const filteredTasks =
+    taskSectionTab === "approved"
+      ? approvedTasks
+      : pendingTasks.filter((t) => {
+          if (statusColorFilter === "all") return true;
+          const meta = getTaskColorMeta(t);
+          return meta.categoryType === statusColorFilter;
+        });
 
   // Files Role Filtering & Separation
   const roleFiles = files.filter((f) => {
@@ -995,8 +1063,20 @@ export default function SwaponsWorldApp() {
   // 1. MANDATORY LOGIN GATE FIRST
   if (!authChecked || !session) {
     return (
-      <div className="min-h-screen bg-[#fafaf9] dark:bg-[#0c0c0d] text-[#18181b] dark:text-[#f4f4f5] flex items-center justify-center p-4 selection:bg-zinc-900 selection:text-white">
+      <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center justify-center p-4 selection:bg-zinc-900 selection:text-white transition-colors duration-200">
         <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-1">
+            <div className="h-6" />
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+              title={theme === "dark" ? "লাইট মোড চালু করুন" : "ডার্ক মোড চালু করুন"}
+            >
+              {theme === "dark" ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-zinc-700" />}
+              <span className="text-[11px]">{theme === "dark" ? "লাইট মোড" : "ডার্ক মোড"}</span>
+            </button>
+          </div>
+
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 mx-auto w-fit shadow-xs">
               <img
@@ -1053,7 +1133,7 @@ export default function SwaponsWorldApp() {
             {loginTab === "team" ? (
               <div className="space-y-3.5">
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5 font-medium">
                     আপনার পদবী নির্বাচন করুন
                   </label>
                   <select
@@ -1071,12 +1151,15 @@ export default function SwaponsWorldApp() {
                 </div>
 
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5 font-medium">
                     টিম পাসওয়ার্ড (Team Password)
                   </label>
                   <input
                     type="password"
                     required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder="টিম পাসওয়ার্ড লিখুন..."
@@ -1101,12 +1184,15 @@ export default function SwaponsWorldApp() {
                 </div>
 
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5 font-medium">
                     অ্যাডমিন পাসওয়ার্ড (Admin Password)
                   </label>
                   <input
                     type="password"
                     required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder="অ্যাডমিন পাসওয়ার্ড লিখুন..."
@@ -1121,7 +1207,7 @@ export default function SwaponsWorldApp() {
             )}
 
             {loginError && (
-              <div className="p-2.5 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs">
+              <div className="p-2.5 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium">
                 {loginError}
               </div>
             )}
@@ -1140,9 +1226,9 @@ export default function SwaponsWorldApp() {
 
   // 2. MAIN LOGGED-IN STUDIO INTERFACE
   return (
-    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#0c0c0d] text-[#18181b] dark:text-[#f4f4f5] antialiased selection:bg-zinc-900 selection:text-white pb-24">
+    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased selection:bg-zinc-900 selection:text-white pb-24 transition-colors duration-200">
       {/* Top Header Navigation */}
-      <header className="sticky top-0 z-40 bg-[#fafaf9]/90 dark:bg-[#0c0c0d]/90 backdrop-blur-md border-b border-stone-200 dark:border-zinc-800">
+      <header className="sticky top-0 z-40 bg-stone-50/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-stone-200 dark:border-zinc-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-center shrink-0 shadow-2xs">
@@ -1174,14 +1260,26 @@ export default function SwaponsWorldApp() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Real-time Clock */}
             <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-stone-100 dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 text-[11px] font-studio-mono text-stone-600 dark:text-zinc-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>DHAKA {dhakaTime || "15:30:00"}</span>
             </div>
 
+            {/* Dark / Light Mode Switcher */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-lg border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+              title={theme === "dark" ? "লাইট মোড চালু করুন" : "ডার্ক মোড চালু করুন"}
+            >
+              {theme === "dark" ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-zinc-700" />}
+              <span className="hidden sm:inline">{theme === "dark" ? "লাইট" : "ডার্ক"}</span>
+            </button>
+
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer"
               title="লগআউট করুন"
             >
               <LogOut className="h-3 w-3" />
@@ -1192,21 +1290,22 @@ export default function SwaponsWorldApp() {
             {!isHead && (
               <button
                 onClick={() => setShowAddFileModal(true)}
-                className="px-3 py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span>+ ডেলিভারেবল জমা দিন</span>
+                <span>+ ফাইল জমা দিন</span>
               </button>
             )}
 
-            {/* Admin Controls: ONLY Assignment Button (ফাইল দিন বাটন রিমুভড!) */}
+            {/* Admin Controls: ONLY Assignment Button */}
             {isHead && (
               <button
                 onClick={() => setShowAddTaskModal(true)}
-                className="px-3.5 py-1.5 rounded bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               >
                 <Zap className="h-3.5 w-3.5 text-amber-400" />
-                <span>+ নতুন অ্যাসাইনমেন্ট (অটোমেশন)</span>
+                <span className="hidden sm:inline">+ নতুন অ্যাসাইনমেন্ট (অটোমেশন)</span>
+                <span className="sm:hidden">+ অ্যাসাইনমেন্ট</span>
               </button>
             )}
           </div>
@@ -1214,9 +1313,9 @@ export default function SwaponsWorldApp() {
 
         {/* If Admin: Department Filters */}
         {isHead && (
-          <div className="border-t border-stone-200/70 dark:border-zinc-800/80 bg-stone-50/60 dark:bg-zinc-950/40">
+          <div className="border-t border-stone-200/70 dark:border-zinc-800/80 bg-stone-100/60 dark:bg-zinc-900/60">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-              <span className="text-[11px] font-studio-mono uppercase text-stone-400 mr-2 shrink-0">
+              <span className="text-[11px] font-studio-mono uppercase text-stone-500 mr-2 shrink-0 font-medium">
                 ডিপার্টমেন্ট ভিউ:
               </span>
               {[
@@ -1243,7 +1342,7 @@ export default function SwaponsWorldApp() {
       </header>
 
       {/* Main Studio Body */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-7 space-y-9">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-7 space-y-8">
         {/* ========================================================= */}
         {/* SECTION 1: উপরে ড্যাশবোর্ড (TOP DASHBOARD SECTION)       */}
         {/* ========================================================= */}
@@ -1252,7 +1351,7 @@ export default function SwaponsWorldApp() {
           <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-2xs">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
               <div>
-                <div className="flex items-center gap-2 text-[11px] font-studio-mono uppercase tracking-wider text-stone-500">
+                <div className="flex items-center gap-2 text-[11px] font-studio-mono uppercase tracking-wider text-stone-500 font-medium">
                   <span>PRODUCTION STATUS OVERVIEW</span>
                   <span>•</span>
                   <span>{session.displayName}</span>
@@ -1372,7 +1471,7 @@ export default function SwaponsWorldApp() {
           {/* ========================================================================= */}
           {/* TASKS SECTION: SEPARATED INTO PENDING & APPROVED ARCHIVE                  */}
           {/* ========================================================================= */}
-          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-4.5 space-y-4 shadow-2xs">
+          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-5 space-y-4 shadow-2xs">
             {/* Main Section Header + Two Distinct Tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-zinc-800">
               <div>
@@ -1383,12 +1482,12 @@ export default function SwaponsWorldApp() {
                   </span>
                 </h3>
                 <p className="text-[11px] text-stone-500">
-                  কাজ সম্পন্ন হলে স্বয়ংক্রিয়ভাবে অ্যাপ্রুভড আর্কাইভে জমা হবে। ভুল করে টিক দিলে এডিট করে পুনরায় ফিরিয়ে নিতে পারবেন।
+                  কাজ সম্পন্ন হলে স্বয়ংক্রিয়ভাবে অ্যাপ্রুভড আর্কাইভে জমা হবে। ভুল করে টিক দিলে এডিট বা রিভার্ট করে পুনরায় ফিরিয়ে নিতে পারবেন।
                 </p>
               </div>
 
               {/* TWO DISTINCT WORKSPACE TABS */}
-              <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800/80 text-xs font-semibold shrink-0">
+              <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1423,9 +1522,9 @@ export default function SwaponsWorldApp() {
               </div>
             </div>
 
-            {/* Quick Filter Chips (Available in Pending Tab) */}
+            {/* Quick Filter Chips (Only in Pending Tab) */}
             {taskSectionTab === "pending" && (
-              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-medium pb-1">
+              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-medium pb-1 no-scrollbar">
                 <button
                   onClick={() => setStatusColorFilter("all")}
                   className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
@@ -1525,7 +1624,7 @@ export default function SwaponsWorldApp() {
                               </span>
 
                               {isHead && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 font-medium">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-medium">
                                   {task.assigneeName}
                                 </span>
                               )}
@@ -1564,15 +1663,15 @@ export default function SwaponsWorldApp() {
 
                             {/* Full Script / Voiceover Text Box with 1-Click Copy */}
                             {task.scriptText && (
-                              <div className="mt-2 p-3 rounded-lg bg-white/80 dark:bg-zinc-900/80 border border-stone-200/90 dark:border-zinc-800 space-y-1.5">
-                                <div className="flex items-center justify-between text-[11px] font-semibold text-stone-600 dark:text-zinc-300 pb-1 border-b border-stone-100 dark:border-zinc-800">
+                              <div className="mt-2 p-3 rounded-lg bg-stone-50 dark:bg-zinc-800/80 border border-stone-200/90 dark:border-zinc-700/80 space-y-1.5">
+                                <div className="flex items-center justify-between text-[11px] font-semibold text-stone-700 dark:text-zinc-200 pb-1 border-b border-stone-200/70 dark:border-zinc-700/60">
                                   <span className="flex items-center gap-1">
                                     <FileText className="h-3.5 w-3.5 text-amber-500" />
                                     <span>স্ক্রিপ্ট / ভয়েসওভার টেক্সট ফাইল:</span>
                                   </span>
                                   <button
                                     onClick={() => handleCopyScript(task.id, task.scriptText || "")}
-                                    className="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer"
+                                    className="px-2 py-0.5 rounded bg-white hover:bg-stone-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 border border-stone-200 dark:border-zinc-600 text-zinc-900 dark:text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                                     title="পুরো স্ক্রিপ্ট কপি করুন"
                                   >
                                     {copiedTaskId === task.id ? (
@@ -1657,236 +1756,239 @@ export default function SwaponsWorldApp() {
         {/* SECTION 2: নিচে সব ফাইলসমূহ (FILES & DELIVERABLES HUB)     */}
         {/* ========================================================= */}
         <section className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-200 dark:border-zinc-800">
-            <div>
-              <h2 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
-                <span>প্রোডাকশন ফাইলস ও ডেলিভারেবলস</span>
-                <span className="text-xs font-studio-mono text-stone-500 font-normal">
-                  ({displayFiles.length} টি ফাইল)
-                </span>
-              </h2>
-              <p className="text-xs text-stone-500">
-                {isHead
-                  ? "টিমের ফাইনাল রেন্ডার ও ড্রাইভ ফাইল। কাজ অ্যাপ্রুভ করলে স্বয়ংক্রিয়ভাবে কমপ্লিট আর্কাইভে জমা হবে।"
-                  : `শুধুমাত্র ${session.displayName}-এর প্রজেক্ট ও রেন্ডার ফাইলসমূহ।`}
-              </p>
-            </div>
-
-            {/* TWO DISTINCT FILE TABS (Pending Review vs Approved Archive) */}
-            <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold shrink-0">
-              <button
-                type="button"
-                onClick={() => setFileSectionTab("pending")}
-                className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-                  fileSectionTab === "pending"
-                    ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
-                    : "text-stone-500 hover:text-zinc-900"
-                }`}
-              >
-                <Hourglass className="h-3.5 w-3.5 text-amber-500" />
-                <span>পেন্ডিং ও চলমান ফাইল ({pendingFiles.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setFileSectionTab("approved")}
-                className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-                  fileSectionTab === "approved"
-                    ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs"
-                    : "text-stone-500 hover:text-zinc-900"
-                }`}
-              >
-                <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
-                <span>অ্যাপ্রুভড ও কমপ্লিট ফাইলস আর্কাইভ ({approvedFiles.length})</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Search & Filter Toolbar */}
-          <div className="flex items-center justify-between gap-3 text-xs">
-            <span className="text-stone-500 text-[11px]">
-              {fileSectionTab === "pending"
-                ? "⏳ এই সেকশনের ফাইলগুলো এখনও রিভিউ বা সংশোধনে আছে।"
-                : "🏆 এই সেকশনের ফাইলগুলো সম্পন্ন ও হেড দ্বারা অ্যাপ্রুভড।"}
-            </span>
-
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
-                <input
-                  type="text"
-                  value={fileSearch}
-                  onChange={(e) => setFileSearch(e.target.value)}
-                  placeholder="ফাইল খুঁজুন..."
-                  className="pl-8 pr-3 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900 w-36 sm:w-44"
-                />
+          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-5 space-y-4 shadow-2xs">
+            {/* Section Header + Two Distinct Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-zinc-800">
+              <div>
+                <h3 className="text-sm font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+                  <span>প্রোডাকশন ফাইলস ও ডেলিভারেবলস</span>
+                  <span className="text-xs font-normal text-stone-500">
+                    ({displayFiles.length} টি ফাইল)
+                  </span>
+                </h3>
+                <p className="text-[11px] text-stone-500">
+                  {isHead
+                    ? "টিমের ফাইনাল রেন্ডার ও ড্রাইভ ফাইল। কাজ অ্যাপ্রুভ করলে স্বয়ংক্রিয়ভাবে কমপ্লিট আর্কাইভে জমা হবে।"
+                    : `শুধুমাত্র ${session.displayName}-এর প্রজেক্ট ও রেন্ডার ফাইলসমূহ।`}
+                </p>
               </div>
 
-              <select
-                value={fileTypeFilter}
-                onChange={(e) => setFileTypeFilter(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none"
-              >
-                <option value="all">সব টাইপ</option>
-                <option value="video">ভিডিও (.mp4)</option>
-                <option value="project">প্রজেক্ট (.prproj/.ai)</option>
-                <option value="image">ইমেজ (.psd)</option>
-                <option value="folder">ড্রাইভ ফোল্ডার</option>
-              </select>
+              {/* TWO DISTINCT FILE TABS (Pending Review vs Approved Archive) */}
+              <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setFileSectionTab("pending")}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                    fileSectionTab === "pending"
+                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900"
+                  }`}
+                >
+                  <Hourglass className="h-3.5 w-3.5 text-amber-500" />
+                  <span>পেন্ডিং ও চলমান ফাইল ({pendingFiles.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFileSectionTab("approved")}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                    fileSectionTab === "approved"
+                      ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900"
+                  }`}
+                >
+                  <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>অ্যাপ্রুভড ও কমপ্লিট ফাইলস আর্কাইভ ({approvedFiles.length})</span>
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Files Grid Rendering */}
-          {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).length === 0 ? (
-            <div className="p-10 text-center rounded-xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 space-y-1.5">
-              <HardDrive className="h-8 w-8 text-stone-300 mx-auto" />
-              <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            {/* Search & Filter Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pt-1">
+              <span className="text-stone-500 text-[11px]">
                 {fileSectionTab === "pending"
-                  ? "কোনো পেন্ডিং বা রিভিউ ফাইল নেই"
-                  : "কোনো ফাইল এখনো অ্যাপ্রুভড আর্কাইভে জমা হয়নি"}
-              </h4>
-              <p className="text-xs text-stone-400 max-w-sm mx-auto">
-                {fileSectionTab === "pending"
-                  ? "টিম মেম্বাররা নতুন রেন্ডার লিংক বা ফাইল জমা দিলে এখানে প্রদর্শিত হবে।"
-                  : "পেন্ডিং ফাইল এপ্রুভ করলে সাথে সাথে এই আর্কাইভে স্থানান্তরিত হবে।"}
-              </p>
+                  ? "⏳ এই সেকশনের ফাইলগুলো এখনও রিভিউ বা সংশোধনে আছে।"
+                  : "🏆 এই সেকশনের ফাইলগুলো সম্পন্ন ও হেড দ্বারা অ্যাপ্রুভড।"}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
+                  <input
+                    type="text"
+                    value={fileSearch}
+                    onChange={(e) => setFileSearch(e.target.value)}
+                    placeholder="ফাইল খুঁজুন..."
+                    className="pl-8 pr-3 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900 w-36 sm:w-44"
+                  />
+                </div>
+
+                <select
+                  value={fileTypeFilter}
+                  onChange={(e) => setFileTypeFilter(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none"
+                >
+                  <option value="all">সব টাইপ</option>
+                  <option value="video">ভিডিও (.mp4)</option>
+                  <option value="project">প্রজেক্ট (.prproj/.ai)</option>
+                  <option value="image">ইমেজ (.psd)</option>
+                  <option value="folder">ড্রাইভ ফোল্ডার</option>
+                </select>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).map((file) => {
-                const isVideo = file.fileType === "video";
-                const isProject = file.fileType === "project";
-                const isFolder = file.fileType === "folder";
 
-                return (
-                  <div
-                    key={file.id}
-                    className="p-4.5 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded bg-stone-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                            {isVideo ? (
-                              <Film className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                            ) : isProject ? (
-                              <FileCode className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                            ) : isFolder ? (
-                              <HardDrive className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                            ) : (
-                              <ImageIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                            )}
-                          </div>
-                          <div>
-                            <span className="font-studio-mono text-[10px] uppercase text-stone-400 block leading-tight">
-                              {file.fileFormat} • {file.fileSize}
-                            </span>
-                            <span className="font-studio-mono text-[11px] font-semibold text-zinc-900 dark:text-white">
-                              {file.fileName}
-                            </span>
-                          </div>
-                        </div>
+            {/* Files Grid Rendering */}
+            {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).length === 0 ? (
+              <div className="p-10 text-center rounded-xl bg-stone-50/50 dark:bg-zinc-800/40 border border-stone-200/50 dark:border-zinc-800 space-y-1.5">
+                <HardDrive className="h-8 w-8 text-stone-300 dark:text-zinc-600 mx-auto" />
+                <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                  {fileSectionTab === "pending"
+                    ? "কোনো পেন্ডিং বা রিভিউ ফাইল নেই"
+                    : "কোনো ফাইল এখনো অ্যাপ্রুভড আর্কাইভে জমা হয়নি"}
+                </h4>
+                <p className="text-xs text-stone-400 max-w-sm mx-auto">
+                  {fileSectionTab === "pending"
+                    ? "টিম মেম্বাররা নতুন রেন্ডার লিংক বা ফাইল জমা দিলে এখানে প্রদর্শিত হবে।"
+                    : "পেন্ডিং ফাইল এপ্রুভ করলে সাথে সাথে এই আর্কাইভে স্থানান্তরিত হবে।"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).map((file) => {
+                  const isVideo = file.fileType === "video";
+                  const isProject = file.fileType === "project";
+                  const isFolder = file.fileType === "folder";
 
-                        {/* Status Badge */}
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`text-[10px] font-studio-mono uppercase px-2 py-0.5 rounded border font-semibold ${
-                              file.status === "approved"
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                  return (
+                    <div
+                      key={file.id}
+                      className="p-4.5 rounded-xl bg-stone-50/70 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/80 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 border border-stone-200/60 dark:border-zinc-600">
+                              {isVideo ? (
+                                <Film className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                              ) : isProject ? (
+                                <FileCode className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                              ) : isFolder ? (
+                                <HardDrive className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                              ) : (
+                                <ImageIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                              )}
+                            </div>
+                            <div>
+                              <span className="font-studio-mono text-[10px] uppercase text-stone-400 dark:text-zinc-400 block leading-tight">
+                                {file.fileFormat} • {file.fileSize}
+                              </span>
+                              <span className="font-studio-mono text-[11px] font-semibold text-zinc-900 dark:text-white">
+                                {file.fileName}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`text-[10px] font-studio-mono uppercase px-2 py-0.5 rounded border font-semibold ${
+                                file.status === "approved"
+                                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                                  : file.status === "needs_revision"
+                                  ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                              }`}
+                            >
+                              {file.status === "approved"
+                                ? "অ্যাপ্রুভড"
                                 : file.status === "needs_revision"
-                                ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
-                                : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
-                            }`}
+                                ? "সংশোধন প্রয়োজন"
+                                : "রিভিউ পেন্ডিং"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <h4 className="text-sm font-semibold text-zinc-950 dark:text-white mt-2.5">
+                          {file.title}
+                        </h4>
+
+                        {file.notes && (
+                          <p className="text-xs text-stone-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                            {file.notes}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Bottom Action Bar */}
+                      <div className="pt-2.5 border-t border-stone-200/80 dark:border-zinc-700/80 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 text-[11px] text-stone-400">
+                          <span>{file.ownerName}</span>
+                          <span>•</span>
+                          <span>{file.uploadedAt}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {/* If in Pending: Admin 1-Click Approve Button */}
+                          {isHead && file.status !== "approved" && (
+                            <button
+                              onClick={() => toggleFileStatus(file.id, "approved")}
+                              className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                              title="ফাইল অ্যাপ্রুভ করুন — সরাসরি কমপ্লিট আর্কাইভে যাবে"
+                            >
+                              <Check className="h-3 w-3 stroke-[3]" />
+                              <span>অ্যাপ্রুভ করুন</span>
+                            </button>
+                          )}
+
+                          {/* If in Approved: Direct Revert Button in case of accidental approval */}
+                          {isHead && file.status === "approved" && (
+                            <button
+                              onClick={() => toggleFileStatus(file.id, "ready_for_review")}
+                              className="px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                              title="ভুল করে এপ্রুভ হলে পেন্ডিংয়ে ফেরত নিন"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              <span>রিভার্ট</span>
+                            </button>
+                          )}
+
+                          {/* Edit File Button */}
+                          <button
+                            onClick={() => setEditingFile(file)}
+                            className="px-2 py-1 rounded bg-white hover:bg-stone-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-200 border border-stone-200 dark:border-zinc-600 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                            title="ফাইলের তথ্য বা স্ট্যাটাস এডিট করুন"
                           >
-                            {file.status === "approved"
-                              ? "অ্যাপ্রুভড"
-                              : file.status === "needs_revision"
-                              ? "সংশোধন প্রয়োজন"
-                              : "রিভিউ পেন্ডিং"}
-                          </span>
+                            <Pencil className="h-3 w-3" />
+                            <span>এডিট</span>
+                          </button>
+
+                          <a
+                            href={file.driveUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded bg-white hover:bg-stone-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-900 dark:text-white border border-stone-200 dark:border-zinc-600 text-xs font-medium flex items-center gap-1 transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            <span>ড্রাইভ</span>
+                          </a>
+
+                          {isHead && (
+                            <button
+                              onClick={() => deleteFile(file.id)}
+                              className="p-1 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer"
+                              title="ফাইল মুছুন"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
-
-                      <h4 className="text-sm font-semibold text-zinc-950 dark:text-white mt-2.5">
-                        {file.title}
-                      </h4>
-
-                      {file.notes && (
-                        <p className="text-xs text-stone-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                          {file.notes}
-                        </p>
-                      )}
                     </div>
-
-                    {/* Bottom Action Bar */}
-                    <div className="pt-2.5 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 text-[11px] text-stone-400">
-                        <span>{file.ownerName}</span>
-                        <span>•</span>
-                        <span>{file.uploadedAt}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        {/* If in Pending: Admin 1-Click Approve Button */}
-                        {isHead && file.status !== "approved" && (
-                          <button
-                            onClick={() => toggleFileStatus(file.id, "approved")}
-                            className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                            title="ফাইল অ্যাপ্রুভ করুন — সরাসরি কমপ্লিট আর্কাইভে যাবে"
-                          >
-                            <Check className="h-3 w-3 stroke-[3]" />
-                            <span>অ্যাপ্রুভ করুন</span>
-                          </button>
-                        )}
-
-                        {/* If in Approved: Direct Revert Button in case of accidental approval */}
-                        {isHead && file.status === "approved" && (
-                          <button
-                            onClick={() => toggleFileStatus(file.id, "ready_for_review")}
-                            className="px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                            title="ভুল করে এপ্রুভ হলে পেন্ডিংয়ে ফেরত নিন"
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                            <span>রিভার্ট</span>
-                          </button>
-                        )}
-
-                        {/* Edit File Button */}
-                        <button
-                          onClick={() => setEditingFile(file)}
-                          className="px-2 py-1 rounded bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                          title="ফাইলের তথ্য বা স্ট্যাটাস এডিট করুন"
-                        >
-                          <Pencil className="h-3 w-3" />
-                          <span>এডিট</span>
-                        </button>
-
-                        <a
-                          href={file.driveUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-xs font-medium flex items-center gap-1 transition-colors"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          <span>ড্রাইভ</span>
-                        </a>
-
-                        {isHead && (
-                          <button
-                            onClick={() => deleteFile(file.id)}
-                            className="p-1 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title="ফাইল মুছুন"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </section>
       </main>
 
@@ -1894,9 +1996,9 @@ export default function SwaponsWorldApp() {
       {/* ADMIN MODAL: SMART AUTOMATED TASK DELEGATION                             */}
       {/* ========================================================================= */}
       {showAddTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800 shrink-0">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-500" />
@@ -1908,274 +2010,277 @@ export default function SwaponsWorldApp() {
               </div>
               <button
                 onClick={() => setShowAddTaskModal(false)}
-                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white"
+                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            {/* 1-CLICK AUTOMATION PRESETS */}
-            <div className="p-3 rounded-xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/80 space-y-2">
-              <span className="text-[11px] font-studio-mono uppercase tracking-wider text-stone-500 font-semibold block">
-                ⚡ ১-ক্লিক অটোমেশন প্রিসেট (One-Click Auto Templates):
-              </span>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => applyAutomationPreset("reels")}
-                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 dark:border-amber-900/60 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
-                >
-                  <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
-                    📱 রিলস ও শর্টস (৯:১৬)
-                  </span>
-                  <span className="text-[10px] text-stone-500 block">ভিডিও + স্ক্রিপ্ট অটো</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyAutomationPreset("voiceover")}
-                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-blue-200 dark:border-blue-900/60 hover:border-blue-500 text-left transition-all cursor-pointer shadow-2xs group"
-                >
-                  <span className="text-xs font-bold text-blue-900 dark:text-blue-300 block">
-                    🎙️ ভয়েসওভার ও সাউন্ড
-                  </span>
-                  <span className="text-[10px] text-stone-500 block">পূর্ণ স্ক্রিপ্ট সহ</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyAutomationPreset("youtube")}
-                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-purple-200 dark:border-purple-900/60 hover:border-purple-500 text-left transition-all cursor-pointer shadow-2xs group"
-                >
-                  <span className="text-xs font-bold text-purple-900 dark:text-purple-300 block">
-                    📺 ইউটিউব ফুল ভিডিও
-                  </span>
-                  <span className="text-[10px] text-stone-500 block">আগামী ৭ দিনের ভেতর</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyAutomationPreset("banner")}
-                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-emerald-200 dark:border-emerald-900/60 hover:border-emerald-500 text-left transition-all cursor-pointer shadow-2xs group"
-                >
-                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 block">
-                    🎨 সোশ্যাল ব্যানার সেট
-                  </span>
-                  <span className="text-[10px] text-stone-500 block">আজকের কাজ</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyAutomationPreset("catalog")}
-                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-stone-200 hover:border-zinc-500 text-left transition-all cursor-pointer shadow-2xs group"
-                >
-                  <span className="text-xs font-bold text-zinc-900 dark:text-white block">
-                    📖 ক্যাটালগ ও ফটো
-                  </span>
-                  <span className="text-[10px] text-stone-500 block">৭ দিনের শিডিউল</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyAutomationPreset("shoot_outdoor")}
-                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
-                >
-                  <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
-                    📹 আউটডোর শুট
-                  </span>
-                  <span className="text-[10px] text-stone-500 block">আজ দুপুর ২:৩০ PM</span>
-                </button>
-              </div>
-            </div>
-
-            {/* AUTOMATED TIMELINE SWITCHER */}
-            <div className="space-y-1.5">
-              <label className="block text-zinc-700 dark:text-zinc-300 font-semibold text-xs">
-                কখন শেষ করতে হবে? (অটোমেশন ডেডলাইন)
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => applyTimelinePreset("today")}
-                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
-                    newCategory === "today"
-                      ? "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
-                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  ⚡ আজকের কাজ (Today)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyTimelinePreset("tomorrow")}
-                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
-                    newCategory === "tomorrow"
-                      ? "border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200"
-                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  📅 কালকের কাজ (Tomorrow)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyTimelinePreset("7days")}
-                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
-                    newCategory === "7days"
-                      ? "border-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-950 dark:text-purple-200"
-                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  🟣 আগামী ৭ দিন (7 Days)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyTimelinePreset("15days")}
-                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
-                    newCategory === "15days"
-                      ? "border-zinc-950 bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  🏆 ১৫ দিনের প্রজেক্ট
-                </button>
-              </div>
-            </div>
-
-            {/* FORM FIELDS */}
-            <form onSubmit={handleAddTask} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  কাজের শিরোনাম / নাম *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="যেমন: নতুন ঈদ ক্যাম্পেইনের রিলস এডিটিং"
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাকে দায়িত্ব দিচ্ছেন *</label>
-                  <select
-                    value={newAssignee}
-                    onChange={(e) => {
-                      const val = e.target.value as TeamMember;
-                      setNewAssignee(val);
-                      if (val === "video_editor") setNewDepartment("video");
-                      else if (val === "designer") setNewDepartment("design");
-                      else if (val === "videographer") setNewDepartment("shoot");
-                    }}
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+            <div className="overflow-y-auto pr-1 space-y-4 flex-1">
+              {/* 1-CLICK AUTOMATION PRESETS */}
+              <div className="p-3 rounded-xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/80 space-y-2">
+                <span className="text-[11px] font-studio-mono uppercase tracking-wider text-stone-500 font-semibold block">
+                  ⚡ ১-ক্লিক অটোমেশন প্রিসেট (One-Click Auto Templates):
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyAutomationPreset("reels")}
+                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 dark:border-amber-900/60 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
                   >
-                    <option value="video_editor">🎬 ভিডিও এডিটর (সব এডিটর একসাথে দেখবে)</option>
-                    <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
-                    <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
-                  </select>
-                </div>
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
+                      📱 রিলস ও শর্টস (৯:১৬)
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">ভিডিও + স্ক্রিপ্ট অটো</span>
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => applyAutomationPreset("voiceover")}
+                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-blue-200 dark:border-blue-900/60 hover:border-blue-500 text-left transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <span className="text-xs font-bold text-blue-900 dark:text-blue-300 block">
+                      🎙️ ভয়েসওভার ও সাউন্ড
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">পূর্ণ স্ক্রিপ্ট সহ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyAutomationPreset("youtube")}
+                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-purple-200 dark:border-purple-900/60 hover:border-purple-500 text-left transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <span className="text-xs font-bold text-purple-900 dark:text-purple-300 block">
+                      📺 ইউটিউব ফুল ভিডিও
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">আগামী ৭ দিনের ভেতর</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyAutomationPreset("banner")}
+                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-emerald-200 dark:border-emerald-900/60 hover:border-emerald-500 text-left transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 block">
+                      🎨 সোশ্যাল ব্যানার সেট
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">আজকের কাজ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyAutomationPreset("catalog")}
+                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-stone-200 hover:border-zinc-500 text-left transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <span className="text-xs font-bold text-zinc-900 dark:text-white block">
+                      📖 ক্যাটালগ ও ফটো
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">৭ দিনের শিডিউল</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyAutomationPreset("shoot_outdoor")}
+                    className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
+                      📹 আউটডোর শুট
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">আজ দুপুর ২:৩০ PM</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* AUTOMATED TIMELINE SWITCHER */}
+              <div className="space-y-1.5">
+                <label className="block text-zinc-700 dark:text-zinc-300 font-semibold text-xs">
+                  কখন শেষ করতে হবে? (অটোমেশন ডেডলাইন)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => applyTimelinePreset("today")}
+                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                      newCategory === "today"
+                        ? "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    ⚡ আজকের কাজ (Today)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyTimelinePreset("tomorrow")}
+                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                      newCategory === "tomorrow"
+                        ? "border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200"
+                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    📅 কালকের কাজ (Tomorrow)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyTimelinePreset("7days")}
+                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                      newCategory === "7days"
+                        ? "border-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-950 dark:text-purple-200"
+                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    🟣 আগামী ৭ দিন (7 Days)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyTimelinePreset("15days")}
+                    className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                      newCategory === "15days"
+                        ? "border-zinc-950 bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                        : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    🏆 ১৫ দিনের প্রজেক্ট
+                  </button>
+                </div>
+              </div>
+
+              {/* FORM FIELDS */}
+              <form id="add-task-form" onSubmit={handleAddTask} className="space-y-3.5 text-xs">
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সময়সীমা টেক্সট</label>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                    কাজের শিরোনাম / নাম *
+                  </label>
                   <input
                     type="text"
-                    value={newDueDate}
-                    onChange={(e) => setNewDueDate(e.target.value)}
-                    placeholder="যেমন: আজকের ভেতর (Today)"
+                    required
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="যেমন: নতুন ঈদ ক্যাম্পেইনের রিলস এডিটিং"
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাকে দায়িত্ব দিচ্ছেন *</label>
+                    <select
+                      value={newAssignee}
+                      onChange={(e) => {
+                        const val = e.target.value as TeamMember;
+                        setNewAssignee(val);
+                        if (val === "video_editor") setNewDepartment("video");
+                        else if (val === "designer") setNewDepartment("design");
+                        else if (val === "videographer") setNewDepartment("shoot");
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    >
+                      <option value="video_editor">🎬 ভিডিও এডিটর (সব এডিটর একসাথে দেখবে)</option>
+                      <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
+                      <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সময়সীমা টেক্সট</label>
+                    <input
+                      type="text"
+                      value={newDueDate}
+                      onChange={(e) => setNewDueDate(e.target.value)}
+                      placeholder="যেমন: আজকের ভেতর (Today)"
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* 🎥 REFERENCE VIDEO URL FIELD */}
+                <div>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1 flex items-center gap-1.5">
+                    <Film className="h-3.5 w-3.5 text-blue-500" />
+                    <span>রেফারেন্স ভিডিও লিংক (YouTube, Reels, TikTok বা ড্রাইভ লিংক)</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={newReferenceVideoUrl}
+                    onChange={(e) => setNewReferenceVideoUrl(e.target.value)}
+                    placeholder="https://youtube.com/shorts/... অথবা গুগল ড্রাইভ রেফারেন্স ভিডিও লিংক"
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                   />
                 </div>
-              </div>
 
-              {/* 🎥 REFERENCE VIDEO URL FIELD */}
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1 flex items-center gap-1.5">
-                  <Film className="h-3.5 w-3.5 text-blue-500" />
-                  <span>রেফারেন্স ভিডিও লিংক (YouTube, Reels, TikTok বা ড্রাইভ লিংক)</span>
-                </label>
-                <input
-                  type="url"
-                  value={newReferenceVideoUrl}
-                  onChange={(e) => setNewReferenceVideoUrl(e.target.value)}
-                  placeholder="https://youtube.com/shorts/... অথবা গুগল ড্রাইভ রেফারেন্স ভিডিও লিংক"
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                />
-              </div>
-
-              {/* 📝 FULL SCRIPT / VOICEOVER TEXT FIELD */}
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1 flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-amber-500" />
-                  <span>স্ক্রিপ্ট বা টেক্সট ফাইল (পুরো স্ক্রিপ্ট / ভয়েস ওভার টেক্সট)</span>
-                </label>
-                <textarea
-                  rows={4}
-                  value={newScriptText}
-                  onChange={(e) => setNewScriptText(e.target.value)}
-                  placeholder="ভয়েসওভারের পুরো ডায়ালগ, হুক, বা টেক্সট স্ক্রিপ্ট এখানে পেস্ট করুন। টিম মেম্বাররা সরাসরি এটি কপি করতে পারবেন..."
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white leading-relaxed font-sans"
-                />
-              </div>
-
-              {newDepartment === "shoot" && (
+                {/* 📝 FULL SCRIPT / VOICEOVER TEXT FIELD */}
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">শুটিং লোকেশন ও কল টাইম</label>
-                  <input
-                    type="text"
-                    value={newLocation}
-                    onChange={(e) => setNewLocation(e.target.value)}
-                    placeholder="যেমন: ধানমন্ডি লেক, দুপুর ২:৩০ PM"
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1 flex items-center gap-1.5">
+                    <FileText className="h-3.5 w-3.5 text-amber-500" />
+                    <span>স্ক্রিপ্ট বা টেক্সট ফাইল (পুরো স্ক্রিপ্ট / ভয়েস ওভার টেক্সট)</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={newScriptText}
+                    onChange={(e) => setNewScriptText(e.target.value)}
+                    placeholder="ভয়েসওভারের পুরো ডায়ালগ, হুক, বা টেক্সট স্ক্রিপ্ট এখানে পেস্ট করুন। টিম মেম্বাররা সরাসরি এটি কপি করতে পারবেন..."
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white leading-relaxed font-sans"
+                  />
+                </div>
+
+                {newDepartment === "shoot" && (
+                  <div>
+                    <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">শুটিং লোকেশন ও কল টাইম</label>
+                    <input
+                      type="text"
+                      value={newLocation}
+                      onChange={(e) => setNewLocation(e.target.value)}
+                      placeholder="যেমন: ধানমন্ডি লেক, দুপুর ২:৩০ PM"
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                    কাজের সাধারণ ব্রিফ ও নোটস
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={newNotes}
+                    onChange={(e) => setNewNotes(e.target.value)}
+                    placeholder="কাটস স্টাইল, কোন ফুটেজ ব্যবহার করবে বা ড্রাইভ লিংক বুঝিয়ে দিন..."
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                   />
                 </div>
-              )}
 
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  কাজের সাধারণ ব্রিফ ও নোটস
-                </label>
-                <textarea
-                  rows={2}
-                  value={newNotes}
-                  onChange={(e) => setNewNotes(e.target.value)}
-                  placeholder="কাটস স্টাইল, কোন ফুটেজ ব্যবহার করবে বা ড্রাইভ লিংক বুঝিয়ে দিন..."
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                />
-              </div>
+                <div className="flex items-center gap-5 pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-zinc-700 dark:text-zinc-300">
+                    <input
+                      type="checkbox"
+                      checked={newIsUrgent}
+                      onChange={(e) => setNewIsUrgent(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded text-amber-600"
+                    />
+                    <span>জরুরি কাজ (Urgent Priority)</span>
+                  </label>
+                </div>
+              </form>
+            </div>
 
-              <div className="flex items-center gap-5 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer text-zinc-700 dark:text-zinc-300">
-                  <input
-                    type="checkbox"
-                    checked={newIsUrgent}
-                    onChange={(e) => setNewIsUrgent(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded text-amber-600"
-                  />
-                  <span>জরুরি কাজ (Urgent Priority)</span>
-                </label>
-              </div>
-
-              <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddTaskModal(false)}
-                  className="px-3.5 py-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
-                >
-                  কাজ অ্যাসাইন করুন
-                </button>
-              </div>
-            </form>
+            <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAddTaskModal(false)}
+                className="px-3.5 py-1.5 rounded-lg text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                form="add-task-form"
+                className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+              >
+                কাজ অ্যাসাইন করুন
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2184,9 +2289,9 @@ export default function SwaponsWorldApp() {
       {/* EDIT TASK MODAL (FOR EDITING & ACCIDENTAL APPROVAL REVERT)                */}
       {/* ========================================================================= */}
       {editingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800 shrink-0">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                   <Pencil className="h-4 w-4 text-blue-500" />
@@ -2198,155 +2303,158 @@ export default function SwaponsWorldApp() {
               </div>
               <button
                 onClick={() => setEditingTask(null)}
-                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white"
+                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditTask} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাজের শিরোনাম</label>
-                <input
-                  type="text"
-                  required
-                  value={editingTask.title}
-                  onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                />
-              </div>
-
-              {/* Status Switcher (Allows reverting accidental approval) */}
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  কাজের অবস্থা / স্ট্যাটাস (Status)
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: "not_done" })}
-                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                      !editingTask.completed && editingTask.statusState === "not_done"
-                        ? "border-rose-500 bg-rose-50 text-rose-900 font-semibold dark:bg-rose-950 dark:text-rose-200"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
-                    }`}
-                  >
-                    🔴 কাজ হয় নাই / বাকি
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" })}
-                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
-                      !editingTask.completed && editingTask.statusState !== "not_done"
-                        ? "border-amber-500 bg-amber-50 text-amber-900 font-semibold dark:bg-amber-950 dark:text-amber-200"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
-                    }`}
-                  >
-                    🟡 আজকের কাজ / পেন্ডিং
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setEditingTask({ ...editingTask, completed: true, statusState: "completed" })}
-                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer col-span-2 sm:col-span-1 ${
-                      editingTask.completed
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold dark:bg-emerald-950 dark:text-emerald-200"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
-                    }`}
-                  >
-                    🟢 অ্যাপ্রুভড ও সম্পন্ন
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  🎥 রেফারেন্স ভিডিও লিংক
-                </label>
-                <input
-                  type="url"
-                  value={editingTask.referenceVideoUrl || ""}
-                  onChange={(e) => setEditingTask({ ...editingTask, referenceVideoUrl: e.target.value })}
-                  placeholder="https://youtube.com/shorts/..."
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  📝 সম্পূর্ণ স্ক্রিপ্ট বা ভয়েসওভার টেক্সট
-                </label>
-                <textarea
-                  rows={4}
-                  value={editingTask.scriptText || ""}
-                  onChange={(e) => setEditingTask({ ...editingTask, scriptText: e.target.value })}
-                  placeholder="সম্পূর্ণ স্ক্রিপ্ট এখানে পেস্ট করুন..."
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white font-sans"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="overflow-y-auto pr-1 flex-1">
+              <form id="edit-task-form" onSubmit={handleSaveEditTask} className="space-y-3.5 text-xs">
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সময়সীমা</label>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাজের শিরোনাম</label>
                   <input
                     type="text"
-                    value={editingTask.dueDate}
-                    onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
+                    required
+                    value={editingTask.title}
+                    onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  />
+                </div>
+
+                {/* Status Switcher (Allows reverting accidental approval) */}
+                <div>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                    কাজের অবস্থা / স্ট্যাটাস (Status)
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: "not_done" })}
+                      className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                        !editingTask.completed && editingTask.statusState === "not_done"
+                          ? "border-rose-500 bg-rose-50 text-rose-900 font-semibold dark:bg-rose-950 dark:text-rose-200"
+                          : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                      }`}
+                    >
+                      🔴 কাজ হয় নাই / বাকি
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" })}
+                      className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                        !editingTask.completed && editingTask.statusState !== "not_done"
+                          ? "border-amber-500 bg-amber-50 text-amber-900 font-semibold dark:bg-amber-950 dark:text-amber-200"
+                          : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                      }`}
+                    >
+                      🟡 আজকের কাজ / পেন্ডিং
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingTask({ ...editingTask, completed: true, statusState: "completed" })}
+                      className={`p-2 rounded-lg border text-left transition-all cursor-pointer col-span-2 sm:col-span-1 ${
+                        editingTask.completed
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold dark:bg-emerald-950 dark:text-emerald-200"
+                          : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                      }`}
+                    >
+                      🟢 অ্যাপ্রুভড ও সম্পন্ন
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                    🎥 রেফারেন্স ভিডিও লিংক
+                  </label>
+                  <input
+                    type="url"
+                    value={editingTask.referenceVideoUrl || ""}
+                    onChange={(e) => setEditingTask({ ...editingTask, referenceVideoUrl: e.target.value })}
+                    placeholder="https://youtube.com/shorts/..."
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাকে দেওয়া</label>
-                  <select
-                    value={editingTask.assignee}
-                    onChange={(e) => {
-                      const val = e.target.value as TeamMember;
-                      const names: Record<TeamMember, string> = {
-                        all: "সবাই",
-                        head: "ক্রিয়েটিভ ডিরেক্টর",
-                        video_editor: "ভিডিও এডিটর",
-                        designer: "গ্রাফিক ডিজাইনার",
-                        videographer: "সিনেমাটোগ্রাফার / শুটার",
-                      };
-                      setEditingTask({ ...editingTask, assignee: val, assigneeName: names[val] });
-                    }}
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                  >
-                    <option value="video_editor">🎬 ভিডিও এডিটর</option>
-                    <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
-                    <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
-                  </select>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                    📝 সম্পূর্ণ স্ক্রিপ্ট বা ভয়েসওভার টেক্সট
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={editingTask.scriptText || ""}
+                    onChange={(e) => setEditingTask({ ...editingTask, scriptText: e.target.value })}
+                    placeholder="সম্পূর্ণ স্ক্রিপ্ট এখানে পেস্ট করুন..."
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white font-sans"
+                  />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সাধারণ নোটস ও ব্রিফ</label>
-                <textarea
-                  rows={2}
-                  value={editingTask.notes || ""}
-                  onChange={(e) => setEditingTask({ ...editingTask, notes: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সময়সীমা</label>
+                    <input
+                      type="text"
+                      value={editingTask.dueDate}
+                      onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    />
+                  </div>
 
-              <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingTask(null)}
-                  className="px-3.5 py-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
-                >
-                  পরিবর্তন সেভ করুন
-                </button>
-              </div>
-            </form>
+                  <div>
+                    <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাকে দেওয়া</label>
+                    <select
+                      value={editingTask.assignee}
+                      onChange={(e) => {
+                        const val = e.target.value as TeamMember;
+                        const names: Record<TeamMember, string> = {
+                          all: "সবাই",
+                          head: "ক্রিয়েটিভ ডিরেক্টর",
+                          video_editor: "ভিডিও এডিটর",
+                          designer: "গ্রাফিক ডিজাইনার",
+                          videographer: "সিনেমাটোগ্রাফার / শুটার",
+                        };
+                        setEditingTask({ ...editingTask, assignee: val, assigneeName: names[val] });
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    >
+                      <option value="video_editor">🎬 ভিডিও এডিটর</option>
+                      <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
+                      <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সাধারণ নোটস ও ব্রিফ</label>
+                  <textarea
+                    rows={2}
+                    value={editingTask.notes || ""}
+                    onChange={(e) => setEditingTask({ ...editingTask, notes: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  />
+                </div>
+              </form>
+            </div>
+
+            <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setEditingTask(null)}
+                className="px-3.5 py-1.5 rounded-lg text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                form="edit-task-form"
+                className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+              >
+                পরিবর্তন সেভ করুন
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2355,8 +2463,8 @@ export default function SwaponsWorldApp() {
       {/* TEAM MODAL: SUBMIT DELIVERABLE / FILE                                     */}
       {/* ========================================================================= */}
       {showAddFileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white">
@@ -2366,7 +2474,7 @@ export default function SwaponsWorldApp() {
               </div>
               <button
                 onClick={() => setShowAddFileModal(false)}
-                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white"
+                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -2442,13 +2550,13 @@ export default function SwaponsWorldApp() {
                 <button
                   type="button"
                   onClick={() => setShowAddFileModal(false)}
-                  className="px-3.5 py-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium"
+                  className="px-3.5 py-1.5 rounded-lg text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium cursor-pointer"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold"
+                  className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
                 >
                   ফাইল জমা দিন
                 </button>
@@ -2462,8 +2570,8 @@ export default function SwaponsWorldApp() {
       {/* EDIT FILE MODAL (FOR EDITING & ACCIDENTAL APPROVAL REVERT)                */}
       {/* ========================================================================= */}
       {editingFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
@@ -2474,7 +2582,7 @@ export default function SwaponsWorldApp() {
               </div>
               <button
                 onClick={() => setEditingFile(null)}
-                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white"
+                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -2561,13 +2669,13 @@ export default function SwaponsWorldApp() {
                 <button
                   type="button"
                   onClick={() => setEditingFile(null)}
-                  className="px-3.5 py-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium"
+                  className="px-3.5 py-1.5 rounded-lg text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium cursor-pointer"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+                  className="px-4 py-1.5 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
                 >
                   পরিবর্তন সেভ করুন
                 </button>
