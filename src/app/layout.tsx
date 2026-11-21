@@ -18,8 +18,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className="h-full flex flex-col antialiased text-slate-900 bg-slate-50 dark:bg-slate-950 dark:text-slate-100">
+    <html lang="bn" className="h-full">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="h-full flex flex-col antialiased bg-[#fafaf9] text-[#18181b] dark:bg-[#0c0c0d] dark:text-[#f4f4f5] selection:bg-zinc-900 selection:text-white">
         {children}
       </body>
     </html>
