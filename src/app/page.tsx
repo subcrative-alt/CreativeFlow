@@ -30,6 +30,14 @@ import {
   Shield,
   User,
   Users,
+  Sparkles,
+  Zap,
+  Mic,
+  Clapperboard,
+  Sliders,
+  CheckCircle,
+  AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 
 // Team Roles for Swapon's World (Consolidated Video Editor pool)
@@ -44,6 +52,7 @@ export interface SwaponTask {
   deadlineCategory: "today" | "tomorrow" | "3days" | "7days" | "15days";
   dueDate: string;
   completed: boolean;
+  statusState?: "not_done" | "in_progress" | "completed";
   notes?: string;
   driveUrl?: string;
   location?: string;
@@ -73,9 +82,9 @@ export interface AuthSession {
   displayName: string;
 }
 
-// Initial Tasks
+// Initial Tasks with Distinct Color Categories
 const INITIAL_TASKS: SwaponTask[] = [
-  // Video Editing Tasks (Unified pool for both editors to divide)
+  // 1. 🟡 আজকের জরুরি কাজ (Action Today - Amber)
   {
     id: "task-vid-1",
     title: "সামার সেলস টিকটক ও ইনস্টাগ্রাম রিলস ভার্টিক্যাল কাট (৯:১৬)",
@@ -83,47 +92,64 @@ const INITIAL_TASKS: SwaponTask[] = [
     assigneeName: "ভিডিও এডিটর",
     department: "video",
     deadlineCategory: "today",
-    dueDate: "আজ সন্ধ্যা ৬:০০",
+    dueDate: "আজ সন্ধ্যা ৬:০০ (Today)",
     completed: false,
     isUrgent: true,
-    notes: "প্রথম ৩ সেকেন্ডের শক্তিশালী ভিজ্যুয়াল হুক, ট্রানজিশন এবং সাউন্ড এফেক্টস সিঙ্ক।",
+    notes: "প্রথম ৩ সেকেন্ডের হুক, ফাস্ট ট্রানজিশন এবং ট্রেন্ডিং সাউন্ড এফেক্টস সিঙ্ক।",
   },
+  // 2. 🟡 আজকের কাজ — ভয়েসওভার সিঙ্ক (Action Today - Amber)
   {
     id: "task-vid-2",
-    title: "ইউটিউব ফুল ভিডিও এডিটিং ও সাউন্ড ডিজাইন মাস্টার (১৬:৯)",
+    title: "ভয়েসওভার ও সাউন্ড সিঙ্ক মাস্টার (Voiceover & Audio)",
     assignee: "video_editor",
     assigneeName: "ভিডিও এডিটর",
     department: "video",
     deadlineCategory: "today",
-    dueDate: "আজ রাত ৯:০০",
+    dueDate: "আজ রাত ৮:০০ (Today)",
     completed: false,
     isUrgent: true,
-    notes: "ভয়েসওভার মাস্টার ট্র্যাক সিঙ্ক, অ্যাম্বিয়েন্স ও কালার গ্রেডিং Rec.709 স্ট্যান্ডার্ডে।",
+    notes: "ভয়েসওভার ক্লিন করা, ব্যাকগ্রাউন্ড নয়েজ রিমুভ ও সাউন্ড লেভেল -14 LUFS নরম্যালাইজেশন।",
   },
+  // 3. 🔴 যে কাজ হয় নাই / পেন্ডিং (Not Done / Pending - Rose/Red)
   {
     id: "task-vid-3",
-    title: "প্রোডাক্ট টিজার ও বি-রোল কাট — ২য় ভার্সন",
+    title: "প্রোডাক্ট টিজার ও বি-রোল কাট — রিভিশন পেন্ডিং",
     assignee: "video_editor",
     assigneeName: "ভিডিও এডিটর",
     department: "video",
     deadlineCategory: "tomorrow",
-    dueDate: "আগামীকাল (Tomorrow)",
+    dueDate: "কালকের ভেতরেই শেষ করতে হবে",
     completed: false,
-    notes: "হেডের রিভিশন অনুযায়ী মিউজিকের বিটের সাথে কাট ফাস্ট করতে হবে।",
+    statusState: "not_done",
+    notes: "হেডের রিভিউ নোট: মিউজিকের বিটের সাথে কাট ফাস্ট করতে হবে। আগের কাজ এখনও সম্পন্ন হয় নাই।",
   },
+  // 4. 🟣 আগামী ৭ দিনের ভেতর কাজ (Upcoming 7 Days - Purple)
   {
     id: "task-vid-4",
-    title: "আসন্ন ক্যাম্পেইনের ড্রাফট কাট সিঙ্ক ও সাবটাইটেলিং",
+    title: "ইউটিউব ফুল ডকুমেন্টারি ভিডিও কাট ও কালার গ্রেডিং (১৬:৯)",
     assignee: "video_editor",
     assigneeName: "ভিডিও এডিটর",
-    deadlineCategory: "3days",
-    dueDate: "৩ দিনের ভেতর",
     department: "video",
+    deadlineCategory: "7days",
+    dueDate: "আগামী ৭ দিনের ভেতর (7 Days)",
     completed: false,
-    notes: "ভিডিওগ্রাফারের র ফুটেজ থেকে বেস্ট টেকগুলো নির্বাচন করে ড্রাফট সাজান।",
+    notes: "১৬:৯ ইউটিউব মাস্টার কাট, বি-রোল সিঙ্ক, সাউন্ড ডিজাইন ও Rec.709 কালার গ্রেডিং।",
+  },
+  // 5. 🟢 কাজ সম্পন্ন হয়েছে (Done - Emerald)
+  {
+    id: "task-vid-5",
+    title: "ইউটিউব ইন্ট্রো ও মোশন গ্রাফিক্স কাট",
+    assignee: "video_editor",
+    assigneeName: "ভিডিও এডিটর",
+    department: "video",
+    deadlineCategory: "today",
+    dueDate: "আজ দুপুর ২:০০",
+    completed: true,
+    statusState: "completed",
+    notes: "ফাইনাল রেন্ডার সম্পন্ন হয়েছে এবং ড্রাইভে আপলোড করা আছে।",
   },
 
-  // Graphic Design Tasks
+  // Graphic Design Tasks (Color Coded)
   {
     id: "task-des-1",
     title: "সামার কালেকশন সোশ্যাল মিডিয়া ব্যানার সেট (১০৮০x১০৮০)",
@@ -131,24 +157,36 @@ const INITIAL_TASKS: SwaponTask[] = [
     assigneeName: "গ্রাফিক ডিজাইনার",
     department: "design",
     deadlineCategory: "today",
-    dueDate: "আজ দুপুর ৩:০০",
-    completed: true,
+    dueDate: "আজ দুপুর ৩:০০ (Today)",
+    completed: false,
     isUrgent: true,
-    notes: "ফেসবুক ও ইনস্টাগ্রাম স্কয়ার পোস্ট এবং স্টোরি সাইজ রেডি করা হয়েছে।",
+    notes: "ফেসবুক ও ইনস্টাগ্রাম স্কয়ার পোস্ট এবং স্টোরি সাইজ প্রস্তুত করতে হবে।",
   },
   {
     id: "task-des-2",
-    title: "ব্র্যান্ড লুকবুক ও ক্যাটালগ ফটো রিটাচিং",
+    title: "ক্যাটালগ ও ফটো ম্যানিপুলেশন — কারেকশন পেন্ডিং",
     assignee: "designer",
     assigneeName: "গ্রাফিক ডিজাইনার",
     department: "design",
-    deadlineCategory: "3days",
-    dueDate: "৩ দিনের ভেতর",
+    deadlineCategory: "tomorrow",
+    dueDate: "কালকের মধ্যে",
     completed: false,
-    notes: "হাই-এন্ড স্কিন রিটাচিং এবং প্রোডাক্টের কালার ব্যালান্স ঠিক করতে হবে।",
+    statusState: "not_done",
+    notes: "স্কিন রিটাচিং এবং প্রোডাক্টের কালার কারেকশন এখনো হয় নাই।",
+  },
+  {
+    id: "task-des-3",
+    title: "ব্র্যান্ড লুকবুক ও হাই-এন্ড ফটো রিটাচিং",
+    assignee: "designer",
+    assigneeName: "গ্রাফিক ডিজাইনার",
+    department: "design",
+    deadlineCategory: "7days",
+    dueDate: "আগামী ৭ দিনের শিডিউল",
+    completed: false,
+    notes: "প্রোডাক্ট লুকবুক ও স্কিন রিটাচিং ক্লায়েন্ট ফাইনাল ডেলিভারির জন্য।",
   },
 
-  // Videographer / Shooter Tasks
+  // Videographer / Shooter Tasks (Color Coded)
   {
     id: "task-sht-1",
     title: "নতুন প্রোডাক্ট ক্যাম্পেইন — আউটডোর শুট",
@@ -156,12 +194,13 @@ const INITIAL_TASKS: SwaponTask[] = [
     assigneeName: "সিনেমাটোগ্রাফার / শুটার",
     department: "shoot",
     deadlineCategory: "today",
-    dueDate: "আজ দুপুর ২:৩০ PM",
-    completed: true,
+    dueDate: "আজ দুপুর ২:৩০ PM (Today)",
+    completed: false,
+    isUrgent: true,
     location: "ধানমন্ডি লেক ও আউটডোর স্পট",
     shootTime: "দুপুর ২:৩০ PM – ৫:০০ PM",
     gearInfo: "Sony FX3 • 24-70mm f/2.8 • Ronin RS3 Gimbal • 4K 60fps",
-    notes: "ন্যাচারাল গোল্ডেন আওয়ার লাইটিং ও স্লো-মোশন ক্লোজ-আপ শট। ফুটেজ ড্রাইভে ব্যাকআপ করুন।",
+    notes: "ন্যাচারাল গোল্ডেন আওয়ার লাইটিং ও স্লো-মোশন ক্লোজ-আপ শট। ফুটেজ ড্রাইভে ব্যাকআপ করতে হবে।",
   },
   {
     id: "task-sht-2",
@@ -170,7 +209,7 @@ const INITIAL_TASKS: SwaponTask[] = [
     assigneeName: "সিনেমাটোগ্রাফার / শুটার",
     department: "shoot",
     deadlineCategory: "7days",
-    dueDate: "৭ দিনের শিডিউল",
+    dueDate: "আগামী ৭ দিনের ভেতর",
     completed: false,
     location: "স্বপনস ওয়ার্ল্ড মেইন স্টুডিও (ফ্লোর ২)",
     shootTime: "সকাল ১১:০০ AM",
@@ -181,7 +220,6 @@ const INITIAL_TASKS: SwaponTask[] = [
 
 // Initial Files
 const INITIAL_FILES: StudioFile[] = [
-  // Video Editing Files
   {
     id: "file-vid-1",
     title: "সামার সেলস ৯:১৬ ভার্টিক্যাল রিলস — ফাইনাল রেন্ডার",
@@ -224,8 +262,6 @@ const INITIAL_FILES: StudioFile[] = [
     uploadedAt: "২০ নভেম্বর, সন্ধ্যা ০৭:০০",
     notes: "সম্পূর্ণ প্রোজেক্ট ফাইল ও ট্রাঞ্জিশন প্রিসেট ড্রাইভে আপলোড করা।",
   },
-
-  // Graphic Designer Files
   {
     id: "file-des-1",
     title: "সামার কালেকশন স্কয়ার পোস্ট ব্যানার (১০৮০x১০৮০)",
@@ -241,22 +277,6 @@ const INITIAL_FILES: StudioFile[] = [
     notes: "সবগুলো লেয়ার আনগ্রুপড ও ফন্ট আউটলাইন করা অবস্থায় আপলোড করা।",
   },
   {
-    id: "file-des-2",
-    title: "ইনস্টাগ্রাম স্টোরি ও হাইলাইট আইকন ভেক্টর সেট",
-    fileName: "Instagram_Story_Pack_5Sets.ai",
-    fileType: "project",
-    fileFormat: "Illustrator (.ai)",
-    fileSize: "85 MB",
-    driveUrl: "https://drive.google.com/drive/folders/swapons_world_design",
-    owner: "designer",
-    ownerName: "গ্রাফিক ডিজাইনার",
-    status: "ready_for_review",
-    uploadedAt: "২১ নভেম্বর, সকাল ১০:৩০",
-    notes: "৫টি ভিন্ন কালার ভ্যারিয়েন্টের ভেক্টর ডিজাইন।",
-  },
-
-  // Videographer Files
-  {
     id: "file-sht-1",
     title: "ধানমন্ডি লেক আউটডোর শুট র ফুটেজ ফোল্ডার",
     fileName: "Dhanmondi_Lake_Shoot_Raw_Clips_Folder.drive",
@@ -269,20 +289,6 @@ const INITIAL_FILES: StudioFile[] = [
     status: "approved",
     uploadedAt: "২১ নভেম্বর, দুপুর ০১:০০",
     notes: "সনি এফএক্সথ্রি দিয়ে শুট করা ৬০টি ক্লিপ গুগল ড্রাইভ স্টুডিওতে ব্যাকআপ সম্পন্ন।",
-  },
-  {
-    id: "file-sht-2",
-    title: "ইনডোর মডেল ও ফ্যাশন শুটের টেকনিক্যাল কল শিট",
-    fileName: "Indoor_Studio_Fashion_CallSheet_V2.pdf",
-    fileType: "document",
-    fileFormat: "PDF Document",
-    fileSize: "4.5 MB",
-    driveUrl: "https://drive.google.com/drive/folders/swapons_world_footage",
-    owner: "videographer",
-    ownerName: "সিনেমাটোগ্রাফার / শুটার",
-    status: "approved",
-    uploadedAt: "২০ নভেম্বর, বিকাল ০৫:০০",
-    notes: "লাইটিং গ্রিড সেটআপ, শট ডিভিশন এবং মডেলদের টাইমিং চার্ট।",
   },
 ];
 
@@ -302,14 +308,13 @@ export default function SwaponsWorldApp() {
   const [files, setFiles] = useState<StudioFile[]>(INITIAL_FILES);
   const [dhakaTime, setDhakaTime] = useState("");
 
-  // Admin filter
+  // Filter States
   const [adminViewFilter, setAdminViewFilter] = useState<TeamMember>("all");
-
-  // Search & Filter for files
+  const [statusColorFilter, setStatusColorFilter] = useState<"all" | "today" | "not_done" | "week" | "completed">("all");
   const [fileSearch, setFileSearch] = useState("");
   const [fileTypeFilter, setFileTypeFilter] = useState("all");
 
-  // Add Task Modal
+  // Add Task Modal & Automation State
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newAssignee, setNewAssignee] = useState<TeamMember>("video_editor");
@@ -333,7 +338,7 @@ export default function SwaponsWorldApp() {
 
   const supabase = createClient();
 
-  // Load Saved Auth Session & Data
+  // Load Session & LocalStorage
   useEffect(() => {
     const savedAuth = localStorage.getItem("swapons_world_session");
     if (savedAuth) {
@@ -357,7 +362,6 @@ export default function SwaponsWorldApp() {
       } catch (e) {}
     }
 
-    // Fetch live tasks from Supabase
     async function fetchSupabaseTasks() {
       try {
         const { data } = await supabase.from("tasks").select("*");
@@ -381,7 +385,7 @@ export default function SwaponsWorldApp() {
     fetchSupabaseTasks();
   }, []);
 
-  // Live Dhaka Clock
+  // Clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -408,7 +412,6 @@ export default function SwaponsWorldApp() {
     const cleanPass = passwordInput.trim();
 
     if (loginTab === "admin") {
-      // Admin password check (admin123 or swapon123 or CreativeFlow#2026)
       if (cleanPass === "admin123" || cleanPass === "swapon123" || cleanPass === "CreativeFlow#2026" || cleanPass === "admin") {
         const adminSession: AuthSession = {
           role: "head",
@@ -422,7 +425,6 @@ export default function SwaponsWorldApp() {
         setLoginError("অ্যাডমিন পাসওয়ার্ড সঠিক নয়। (ডিফল্ট: admin123)");
       }
     } else {
-      // Team Member password check (team123 or 1234 or team)
       if (cleanPass === "team123" || cleanPass === "1234" || cleanPass === "team" || cleanPass === "swapon") {
         const roleLabels: Record<TeamMember, string> = {
           video_editor: "ভিডিও এডিটর টিম",
@@ -463,11 +465,11 @@ export default function SwaponsWorldApp() {
     localStorage.setItem("swapons_world_files", JSON.stringify(newFileList));
   };
 
-  // Toggle Task Complete
+  // Toggle Task Complete with Color Cycle
   const toggleTask = async (taskId: string) => {
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
-        return { ...t, completed: !t.completed };
+        return { ...t, completed: !t.completed, statusState: !t.completed ? ("completed" as const) : undefined };
       }
       return t;
     });
@@ -484,6 +486,26 @@ export default function SwaponsWorldApp() {
     } catch (e) {}
   };
 
+  // Status Cycle: [হয় নাই / লাল] -> [আজকের কাজ / হলুদ] -> [সম্পন্ন / সবুজ]
+  const cycleTaskStatus = (taskId: string) => {
+    const updated = tasks.map((t) => {
+      if (t.id === taskId) {
+        if (t.completed) {
+          // Switch to: হয় নাই / লাল
+          return { ...t, completed: false, statusState: "not_done" as const };
+        } else if (t.statusState === "not_done") {
+          // Switch to: আজকের কাজ / হলুদ
+          return { ...t, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" as const, dueDate: "আজকের ভেতর" };
+        } else {
+          // Switch to: সম্পন্ন / সবুজ
+          return { ...t, completed: true, statusState: "completed" as const };
+        }
+      }
+      return t;
+    });
+    updateTasks(updated);
+  };
+
   // Delete Task
   const deleteTask = async (taskId: string) => {
     const updated = tasks.filter((t) => t.id !== taskId);
@@ -493,7 +515,106 @@ export default function SwaponsWorldApp() {
     } catch (e) {}
   };
 
-  // Admin Add Task
+  // =========================================================================
+  // SMART AUTOMATION ENGINE (অ্যাডমিনের জন্য অটোমেটিক কাজ সেট করা)
+  // =========================================================================
+  const applyAutomationPreset = (presetType: "reels" | "voiceover" | "youtube" | "banner" | "catalog" | "shoot_outdoor" | "shoot_indoor") => {
+    switch (presetType) {
+      case "reels":
+        setNewTitle("নতুন ইনস্টাগ্রাম ও টিকটক রিলস এডিটিং (৯:১৬)");
+        setNewAssignee("video_editor");
+        setNewDepartment("video");
+        setNewCategory("today");
+        setNewDueDate("আজকের ভেতর (Today)");
+        setNewIsUrgent(true);
+        setNewNotes("প্রথম ৩ সেকেন্ডের হুক, দ্রুত ট্রানজিশন, কাইনেটিক সাবটাইটেল এবং ট্রেন্ডিং মিউজিক সিঙ্ক।");
+        break;
+
+      case "voiceover":
+        setNewTitle("ভয়েসওভার ও সাউন্ড সিঙ্ক মাস্টার (Audio & Voiceover)");
+        setNewAssignee("video_editor");
+        setNewDepartment("video");
+        setNewCategory("today");
+        setNewDueDate("আজ রাত ৮:০০");
+        setNewIsUrgent(true);
+        setNewNotes("ভয়েসওভারের ব্যাকগ্রাউন্ড নয়েজ রিমুভ, অ্যাম্বিয়েন্স লেভেল -14 LUFS নরম্যালাইজ এবং ডায়ালগ সিঙ্ক।");
+        break;
+
+      case "youtube":
+        setNewTitle("ইউটিউব ফুল ডকুমেন্টারি ভিডিও কাট ও কালার গ্রেড (১৬:৯)");
+        setNewAssignee("video_editor");
+        setNewDepartment("video");
+        setNewCategory("7days");
+        setNewDueDate("আগামী ৭ দিনের ভেতর (7 Days)");
+        setNewIsUrgent(false);
+        setNewNotes("১৬:৯ ফুল এইচডি/৪কে রেন্ডার, বি-রোল ফুটেজ সিঙ্ক, সাউন্ড ইফেক্টস এবং Rec.709 কালার গ্রেডিং।");
+        break;
+
+      case "banner":
+        setNewTitle("সোশ্যাল মিডিয়া স্কয়ার পোস্ট ও ব্যানার ডিজাইন সেট");
+        setNewAssignee("designer");
+        setNewDepartment("design");
+        setNewCategory("today");
+        setNewDueDate("আজকের ভেতর (Today)");
+        setNewIsUrgent(true);
+        setNewNotes("১০৮০x১০৮০ স্কয়ার পোস্ট এবং ১০৮০x১৯২০ ইনস্টাগ্রাম স্টোরি সাইজ। লেয়ারসহ পিএসডি ফাইল রেডি করুন।");
+        break;
+
+      case "catalog":
+        setNewTitle("প্রোডাক্ট লুকবুক ও হাই-এন্ড ফটো রিটাচিং");
+        setNewAssignee("designer");
+        setNewDepartment("design");
+        setNewCategory("7days");
+        setNewDueDate("আগামী ৭ দিনের শিডিউল");
+        setNewIsUrgent(false);
+        setNewNotes("হাই-এন্ড স্কিন রিটাচিং, ব্যাকগ্রাউন্ড ক্লিনআপ এবং কালার ব্যালান্স ক্লায়েন্ট অ্যাপ্রুভালের জন্য।");
+        break;
+
+      case "shoot_outdoor":
+        setNewTitle("নতুন প্রোডাক্ট ক্যাম্পেইন — আউটডোর শুট");
+        setNewAssignee("videographer");
+        setNewDepartment("shoot");
+        setNewCategory("today");
+        setNewDueDate("আজ দুপুর ২:৩০ PM");
+        setNewIsUrgent(true);
+        setNewLocation("ধানমন্ডি লেক ও আউটডোর স্পট");
+        setNewGearInfo("Sony FX3 • 24-70mm • Ronin RS3 Gimbal • 4K 60fps");
+        setNewNotes("ন্যাচারাল গোল্ডেন আওয়ার লাইট, স্লো-মোশন ক্লোজ-আপ শট। ফুটেজ দ্রুত গুগল ড্রাইভ স্টুডিওতে ব্যাকআপ দিন।");
+        break;
+
+      case "shoot_indoor":
+        setNewTitle("স্টুডিও ফ্যাশন পোর্ট্রেট ও মডেল সিনেমাটোগ্রাফি");
+        setNewAssignee("videographer");
+        setNewDepartment("shoot");
+        setNewCategory("7days");
+        setNewDueDate("আগামী ৭ দিনের ভেতর");
+        setNewIsUrgent(false);
+        setNewLocation("স্বপনস ওয়ার্ল্ড মেইন স্টুডিও (ফ্লোর ২)");
+        setNewGearInfo("Aputure 300d II Softbox • C-Stands • Reflector Panel");
+        setNewNotes("ইনডোর থিম্যাটিক ব্যাকড্রপ ও লাইটিং গ্রিড সেটআপ। মডেল শট ডিভিশন চার্ট ফলো করুন।");
+        break;
+    }
+  };
+
+  // Timeline Auto Preset
+  const applyTimelinePreset = (timeframe: "today" | "tomorrow" | "7days" | "15days") => {
+    setNewCategory(timeframe);
+    if (timeframe === "today") {
+      setNewDueDate("আজকের ভেতর (Today)");
+      setNewIsUrgent(true);
+    } else if (timeframe === "tomorrow") {
+      setNewDueDate("আগামীকাল (Tomorrow)");
+      setNewIsUrgent(false);
+    } else if (timeframe === "7days") {
+      setNewDueDate("আগামী ৭ দিনের ভেতর (7 Days)");
+      setNewIsUrgent(false);
+    } else {
+      setNewDueDate("১৫ দিনের প্রজেক্ট মাইলস্টোন");
+      setNewIsUrgent(false);
+    }
+  };
+
+  // Handle Admin Add Task Submit
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -513,7 +634,7 @@ export default function SwaponsWorldApp() {
       assigneeName: assigneeNames[newAssignee],
       department: newDepartment,
       deadlineCategory: newCategory,
-      dueDate: newDueDate || (newCategory === "today" ? "আজকের ভেতর" : newCategory === "tomorrow" ? "আগামীকাল" : newCategory === "3days" ? "৩ দিনের ভেতর" : newCategory === "7days" ? "৭ দিনের শিডিউল" : "১৫ দিনের প্রজেক্ট"),
+      dueDate: newDueDate || (newCategory === "today" ? "আজকের ভেতর (Today)" : newCategory === "tomorrow" ? "আগামীকাল" : newCategory === "7days" ? "আগামী ৭ দিনের ভেতর" : "১৫ দিনের প্রজেক্ট"),
       completed: false,
       notes: newNotes.trim() || undefined,
       location: newLocation.trim() || undefined,
@@ -537,7 +658,7 @@ export default function SwaponsWorldApp() {
       ]);
     } catch (e) {}
 
-    // Reset Form
+    // Reset
     setNewTitle("");
     setNewNotes("");
     setNewLocation("");
@@ -580,7 +701,6 @@ export default function SwaponsWorldApp() {
     const updatedFiles = [newFileItem, ...files];
     updateFiles(updatedFiles);
 
-    // Reset Form
     setNewFileTitle("");
     setNewFileName("");
     setNewFileSize("");
@@ -589,7 +709,6 @@ export default function SwaponsWorldApp() {
     setShowAddFileModal(false);
   };
 
-  // Toggle File Status
   const toggleFileStatus = (fileId: string) => {
     const updated = files.map((f) => {
       if (f.id === fileId) {
@@ -606,58 +725,111 @@ export default function SwaponsWorldApp() {
     updateFiles(updated);
   };
 
-  // Delete File
   const deleteFile = (fileId: string) => {
     const updated = files.filter((f) => f.id !== fileId);
     updateFiles(updated);
   };
 
-  // Filter Tasks & Files based on Role
+  // Role Filtering
   const isHead = session?.isAdmin ?? false;
 
-  const visibleTasks = tasks.filter((t) => {
+  const roleTasks = tasks.filter((t) => {
     if (isHead) {
       if (adminViewFilter === "all") return true;
       return t.assignee === adminViewFilter;
     }
-    // Team member strictly only sees their own tasks
     return t.assignee === session?.role;
   });
 
-  const visibleFiles = files.filter((f) => {
+  // Color Theme & Status Categorization Helper
+  const getTaskColorMeta = (task: SwaponTask) => {
+    if (task.completed) {
+      return {
+        badgeText: "✅ কাজ সম্পন্ন (Done)",
+        badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800",
+        borderAccent: "border-l-4 border-l-emerald-500",
+        cardBg: "bg-emerald-50/20 dark:bg-emerald-950/10",
+        categoryType: "completed",
+        dotColor: "bg-emerald-500",
+      };
+    }
+    if (task.statusState === "not_done") {
+      return {
+        badgeText: "🔴 কাজ হয় নাই / পেন্ডিং",
+        badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800",
+        borderAccent: "border-l-4 border-l-rose-500",
+        cardBg: "bg-rose-50/30 dark:bg-rose-950/20",
+        categoryType: "not_done",
+        dotColor: "bg-rose-500",
+      };
+    }
+    if (task.isUrgent || task.deadlineCategory === "today") {
+      return {
+        badgeText: "🟡 আজকের জরুরি কাজ (Must Do)",
+        badgeClass: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-700",
+        borderAccent: "border-l-4 border-l-amber-500",
+        cardBg: "bg-amber-50/30 dark:bg-amber-950/15",
+        categoryType: "today",
+        dotColor: "bg-amber-500",
+      };
+    }
+    if (task.deadlineCategory === "7days" || task.deadlineCategory === "3days") {
+      return {
+        badgeText: "🟣 আগামী ৭ দিনের ভেতর",
+        badgeClass: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-300 dark:border-purple-800",
+        borderAccent: "border-l-4 border-l-purple-500",
+        cardBg: "bg-purple-50/25 dark:bg-purple-950/15",
+        categoryType: "week",
+        dotColor: "bg-purple-500",
+      };
+    }
+    return {
+      badgeText: "🔴 কাজ হয় নাই / বাকি",
+      badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800",
+      borderAccent: "border-l-4 border-l-rose-400",
+      cardBg: "bg-rose-50/20 dark:bg-rose-950/15",
+      categoryType: "not_done",
+      dotColor: "bg-rose-500",
+    };
+  };
+
+  // Color Filtered Tasks
+  const filteredTasks = roleTasks.filter((t) => {
+    if (statusColorFilter === "all") return true;
+    const meta = getTaskColorMeta(t);
+    return meta.categoryType === statusColorFilter;
+  });
+
+  const roleFiles = files.filter((f) => {
     if (isHead) {
       if (adminViewFilter === "all") return true;
       return f.owner === adminViewFilter;
     }
-    // Team member strictly only sees their own files
     return f.owner === session?.role;
   });
 
-  const displayFiles = visibleFiles.filter((f) => {
+  const displayFiles = roleFiles.filter((f) => {
     const matchesSearch =
       f.title.toLowerCase().includes(fileSearch.toLowerCase()) ||
       f.fileName.toLowerCase().includes(fileSearch.toLowerCase()) ||
       (f.notes && f.notes.toLowerCase().includes(fileSearch.toLowerCase()));
-
     const matchesType = fileTypeFilter === "all" || f.fileType === fileTypeFilter;
     return matchesSearch && matchesType;
   });
 
-  const todayTasks = visibleTasks.filter((t) => t.deadlineCategory === "today");
-  const upcomingTasks = visibleTasks.filter((t) => t.deadlineCategory !== "today");
-
-  const totalTasks = visibleTasks.length;
-  const completedTasks = visibleTasks.filter((t) => t.completed).length;
-  const pendingTasks = totalTasks - completedTasks;
+  // Task Counts for Dashboard
+  const totalTasks = roleTasks.length;
+  const completedTasks = roleTasks.filter((t) => t.completed).length;
+  const notDoneTasks = roleTasks.filter((t) => !t.completed && t.statusState === "not_done").length;
+  const todayActionTasks = roleTasks.filter((t) => !t.completed && (t.deadlineCategory === "today" || t.isUrgent)).length;
+  const weekTasks = roleTasks.filter((t) => !t.completed && (t.deadlineCategory === "7days" || t.deadlineCategory === "3days")).length;
   const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // 1. MANDATORY LOGIN GATE FIRST:
-  // If no active session, show clean minimalist login screen
+  // 1. MANDATORY LOGIN GATE FIRST
   if (!authChecked || !session) {
     return (
       <div className="min-h-screen bg-[#fafaf9] dark:bg-[#0c0c0d] text-[#18181b] dark:text-[#f4f4f5] flex items-center justify-center p-4 selection:bg-zinc-900 selection:text-white">
         <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 p-6 sm:p-8 shadow-sm space-y-6">
-          {/* Studio Brand */}
           <div className="text-center space-y-1.5">
             <div className="h-10 w-10 rounded-xl bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 flex items-center justify-center font-studio-mono font-bold text-sm mx-auto shadow-2xs">
               SW
@@ -670,7 +842,6 @@ export default function SwaponsWorldApp() {
             </p>
           </div>
 
-          {/* Login Type Segmented Toggle */}
           <div className="grid grid-cols-2 p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold">
             <button
               type="button"
@@ -707,10 +878,8 @@ export default function SwaponsWorldApp() {
             </button>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-4 text-xs font-medium">
             {loginTab === "team" ? (
-              // Team Member Section
               <div className="space-y-3.5">
                 <div>
                   <label className="block text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -721,12 +890,12 @@ export default function SwaponsWorldApp() {
                     onChange={(e) => setTeamRoleSelect(e.target.value as TeamMember)}
                     className="w-full px-3 py-2.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
                   >
-                    <option value="video_editor">ভিডিও এডিটর (Video Editor)</option>
-                    <option value="designer">গ্রাফিক ডিজাইনার (Graphic Designer)</option>
-                    <option value="videographer">সিনেমাটোগ্রাফার / শুটার (Videographer)</option>
+                    <option value="video_editor">🎬 ভিডিও এডিটর (সব এডিটিং কাজ একসাথে)</option>
+                    <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
+                    <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
                   </select>
                   <p className="text-[11px] text-stone-400 mt-1">
-                    ভিডিও এডিটররা ঢুকলে সব ভিডিও এডিটিং কাজ একসাথে দেখতে ও নিজেদের মাঝে ভাগ করে নিতে পারবেন।
+                    ভিডিও এডিটররা ঢুকলে আজকের সব কাজ একসাথে দেখে নিজেদের ভেতর ভাগ করে নিতে পারবেন।
                   </p>
                 </div>
 
@@ -749,15 +918,14 @@ export default function SwaponsWorldApp() {
                 </div>
               </div>
             ) : (
-              // Admin Section
               <div className="space-y-3.5">
                 <div className="p-3 rounded-lg bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/60 dark:border-zinc-700/60 space-y-1">
                   <div className="flex items-center gap-1.5 text-zinc-900 dark:text-white font-semibold">
                     <Shield className="h-3.5 w-3.5 text-zinc-950 dark:text-white" />
-                    <span>অ্যাডমিন ম্যানেজমেন্ট পোর্টাল</span>
+                    <span>অ্যাডমিন অটোমেশন হাব</span>
                   </div>
                   <p className="text-[11px] text-stone-500 dark:text-zinc-400 leading-relaxed">
-                    অ্যাডমিন হিসেবে ঢুকে সবাইকে কাজ বুঝিয়ে দিতে পারবেন, নতুন কাজ ও ফাইল অ্যাসাইন করতে পারবেন।
+                    অ্যাডমিন হিসেবে ১-ক্লিক অটোমেশন দিয়ে রিলস, ভয়েসওভার বা ৭ দিনের শিডিউলে কাজ অ্যাসাইন করতে পারবেন।
                   </p>
                 </div>
 
@@ -791,7 +959,7 @@ export default function SwaponsWorldApp() {
               type="submit"
               className="w-full py-2.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
             >
-              {loginTab === "admin" ? "অ্যাডমিন ড্যাশবোর্ডে প্রবেশ →" : "কাজের বোর্ডে প্রবেশ করুন →"}
+              {loginTab === "admin" ? "অ্যাডমিন প্যানেলে প্রবেশ →" : "কাজের বোর্ডে প্রবেশ করুন →"}
             </button>
           </form>
         </div>
@@ -805,7 +973,6 @@ export default function SwaponsWorldApp() {
       {/* Top Header Navigation */}
       <header className="sticky top-0 z-40 bg-[#fafaf9]/90 dark:bg-[#0c0c0d]/90 backdrop-blur-md border-b border-stone-200 dark:border-zinc-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
-          {/* Brand & User Role */}
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 flex items-center justify-center font-studio-mono font-bold text-xs shrink-0 shadow-2xs">
               SW
@@ -825,21 +992,18 @@ export default function SwaponsWorldApp() {
               </div>
               <p className="text-[11px] text-stone-500 dark:text-zinc-400">
                 {isHead
-                  ? "অ্যাডমিন মোড • কাজ বুঝিয়ে দিন ও সবার কাজ পরিচালনা করুন"
-                  : "টিম মেম্বার ভিউ • শুধুমাত্র আপনার আজকের কাজ ও ফাইলসমূহ"}
+                  ? "অ্যাডমিন কন্ট্রোল • স্মার্ট অটোমেশন দিয়ে কাজ সেট করুন ও তদারকি করুন"
+                  : "টিম মেম্বার ভিউ • আজকের কাজ, পেন্ডিং কাজ ও রেন্ডার ফাইলসমূহ"}
               </p>
             </div>
           </div>
 
-          {/* Right Header Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Clock */}
             <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-stone-100 dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 text-[11px] font-studio-mono text-stone-600 dark:text-zinc-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>DHAKA {dhakaTime || "15:00:00"}</span>
+              <span>DHAKA {dhakaTime || "15:30:00"}</span>
             </div>
 
-            {/* Logout button */}
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-300 transition-colors cursor-pointer"
@@ -849,7 +1013,6 @@ export default function SwaponsWorldApp() {
               <span className="hidden sm:inline">লগআউট</span>
             </button>
 
-            {/* Admin Actions: Add File and Add Task */}
             {isHead && (
               <>
                 <button
@@ -864,15 +1027,15 @@ export default function SwaponsWorldApp() {
                   onClick={() => setShowAddTaskModal(true)}
                   className="px-3.5 py-1.5 rounded bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>+ নতুন কাজ বুঝিয়ে দিন</span>
+                  <Zap className="h-3.5 w-3.5 text-amber-400" />
+                  <span>+ কাজ বুঝিয়ে দিন (অটোমেশন)</span>
                 </button>
               </>
             )}
           </div>
         </div>
 
-        {/* If Admin is logged in: Department Filter Pill Bar */}
+        {/* If Admin: Department Filters */}
         {isHead && (
           <div className="border-t border-stone-200/70 dark:border-zinc-800/80 bg-stone-50/60 dark:bg-zinc-950/40">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
@@ -881,7 +1044,7 @@ export default function SwaponsWorldApp() {
               </span>
               {[
                 { id: "all", label: "সবার কাজ (All Work)" },
-                { id: "video_editor", label: "🎬 ভিডিও এডিটর (সব এডিটিং কাজ)" },
+                { id: "video_editor", label: "🎬 ভিডিও এডিটর টিম" },
                 { id: "designer", label: "🎨 গ্রাফিক ডিজাইনার" },
                 { id: "videographer", label: "📹 সিনেমাটোগ্রাফার / শুট" },
               ].map((m) => (
@@ -908,14 +1071,12 @@ export default function SwaponsWorldApp() {
         {/* SECTION 1: উপরে ড্যাশবোর্ড (TOP DASHBOARD SECTION)       */}
         {/* ========================================================= */}
         <section className="space-y-4">
-          {/* KPI Summary Card */}
+          {/* Color-Coded Status Overview Strip */}
           <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-2xs">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
               <div>
                 <div className="flex items-center gap-2 text-[11px] font-studio-mono uppercase tracking-wider text-stone-500">
-                  <span>
-                    {isHead ? "ADMIN PRODUCTION DASHBOARD" : "TODAY'S WORKSTATION"}
-                  </span>
+                  <span>PRODUCTION STATUS OVERVIEW</span>
                   <span>•</span>
                   <span>{session.displayName}</span>
                 </div>
@@ -927,35 +1088,82 @@ export default function SwaponsWorldApp() {
                     / {totalTasks < 10 ? "০" + totalTasks : totalTasks}
                   </span>
                   <span className="text-sm font-medium text-stone-600 dark:text-zinc-400 ml-1">
-                    কাজ সম্পন্ন ({taskProgress}%)
+                    সম্পন্ন ({taskProgress}%)
                   </span>
                 </div>
               </div>
 
-              {/* Status Columns */}
-              <div className="flex items-center gap-5 sm:gap-7 text-xs border-t md:border-t-0 md:border-l border-stone-200 dark:border-zinc-800 pt-3 md:pt-0 md:pl-7">
-                <div>
-                  <span className="text-stone-400 block text-[11px] font-studio-mono uppercase">
-                    আজকের কাজ
-                  </span>
-                  <span className="text-base font-semibold text-zinc-900 dark:text-white font-studio-mono mt-0.5 block">
-                    {todayTasks.length} টি
+              {/* Distinct Color Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs pt-3 md:pt-0">
+                {/* 1. Yellow/Amber: Today Action */}
+                <div
+                  onClick={() => setStatusColorFilter(statusColorFilter === "today" ? "all" : "today")}
+                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                    statusColorFilter === "today"
+                      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40"
+                      : "border-amber-200/80 bg-amber-50/50 hover:bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    <span>আজকের কাজ</span>
+                  </div>
+                  <span className="text-lg font-bold font-studio-mono text-amber-900 dark:text-amber-200 block mt-0.5">
+                    {todayActionTasks} টি
                   </span>
                 </div>
-                <div>
-                  <span className="text-stone-400 block text-[11px] font-studio-mono uppercase">
-                    বাকি কাজ
-                  </span>
-                  <span className="text-base font-semibold text-zinc-900 dark:text-white font-studio-mono mt-0.5 block">
-                    {pendingTasks} টি
+
+                {/* 2. Red/Rose: Not Done / Pending */}
+                <div
+                  onClick={() => setStatusColorFilter(statusColorFilter === "not_done" ? "all" : "not_done")}
+                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                    statusColorFilter === "not_done"
+                      ? "border-rose-500 bg-rose-50 dark:bg-rose-950/40"
+                      : "border-rose-200/80 bg-rose-50/50 hover:bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-rose-500" />
+                    <span>কাজ হয় নাই / পেন্ডিং</span>
+                  </div>
+                  <span className="text-lg font-bold font-studio-mono text-rose-900 dark:text-rose-200 block mt-0.5">
+                    {notDoneTasks} টি
                   </span>
                 </div>
-                <div>
-                  <span className="text-stone-400 block text-[11px] font-studio-mono uppercase">
-                    প্রোডাকশন ফাইলস
+
+                {/* 3. Purple: 7 Days Pipeline */}
+                <div
+                  onClick={() => setStatusColorFilter(statusColorFilter === "week" ? "all" : "week")}
+                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                    statusColorFilter === "week"
+                      ? "border-purple-500 bg-purple-50 dark:bg-purple-950/40"
+                      : "border-purple-200/80 bg-purple-50/50 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-purple-950/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-400 font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-purple-500" />
+                    <span>আগামী ৭ দিন</span>
+                  </div>
+                  <span className="text-lg font-bold font-studio-mono text-purple-900 dark:text-purple-200 block mt-0.5">
+                    {weekTasks} টি
                   </span>
-                  <span className="text-base font-semibold text-zinc-900 dark:text-white font-studio-mono mt-0.5 block">
-                    {visibleFiles.length} টি
+                </div>
+
+                {/* 4. Green/Emerald: Completed */}
+                <div
+                  onClick={() => setStatusColorFilter(statusColorFilter === "completed" ? "all" : "completed")}
+                  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
+                    statusColorFilter === "completed"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40"
+                      : "border-emerald-200/80 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span>কাজ সম্পন্ন</span>
+                  </div>
+                  <span className="text-lg font-bold font-studio-mono text-emerald-900 dark:text-emerald-200 block mt-0.5">
+                    {completedTasks} টি
                   </span>
                 </div>
               </div>
@@ -965,114 +1173,187 @@ export default function SwaponsWorldApp() {
             <div className="mt-5">
               <div className="h-1.5 w-full bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-zinc-900 dark:bg-zinc-100 rounded-full transition-all duration-300"
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
                   style={{ width: `${taskProgress}%` }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Today's Tasks Interactive Checklist */}
-          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-4.5 space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-zinc-800">
+          {/* Color-Coded Task List & Quick Filter Chips */}
+          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-4.5 space-y-3.5 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100 dark:border-zinc-800">
               <div>
                 <h3 className="text-sm font-bold text-zinc-950 dark:text-white">
                   {session.role === "video_editor"
-                    ? "আজকের ভিডিও এডিটিং কাজসমূহ (এডিটররা নিজেদের মাঝে ভাগ করে নিবেন)"
-                    : "আজকের জন্য নির্ধারিত কাজ ও অ্যাসাইনমেন্ট"}
+                    ? "ভিডিও এডিটিং কাজের শিডিউল (রিলস, ভয়েসওভার ও লং ভিডিও)"
+                    : "কাজের স্ট্যাটাস ও শিডিউল"}
                 </h3>
                 <p className="text-[11px] text-stone-500">
-                  {isHead
-                    ? "টিম মেম্বারদের দেওয়া আজকের কাজের তালিকা ও নির্দেশনাসমূহ।"
-                    : "যে কাজটি শেষ হবে বামপাশের বক্সে টিক দিয়ে মার্ক করুন।"}
+                  রং দেখে কাজের অবস্থা বুঝুন (হলুদ = আজই করণীয়, লাল = কাজ হয় নাই, বেগুনি = ৭ দিন, সবুজ = সম্পন্ন)।
                 </p>
               </div>
-              <span className="text-[11px] font-studio-mono text-stone-400">
-                {todayTasks.filter((t) => t.completed).length} OF {todayTasks.length} DONE
-              </span>
+
+              {/* Color Filter Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-medium">
+                <button
+                  onClick={() => setStatusColorFilter("all")}
+                  className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                    statusColorFilter === "all"
+                      ? "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                      : "text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  সব ({roleTasks.length})
+                </button>
+                <button
+                  onClick={() => setStatusColorFilter("today")}
+                  className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
+                    statusColorFilter === "today"
+                      ? "bg-amber-500 text-white"
+                      : "text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40"
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  আজকের কাজ ({todayActionTasks})
+                </button>
+                <button
+                  onClick={() => setStatusColorFilter("not_done")}
+                  className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
+                    statusColorFilter === "not_done"
+                      ? "bg-rose-600 text-white"
+                      : "text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40"
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                  হয় নাই ({notDoneTasks})
+                </button>
+                <button
+                  onClick={() => setStatusColorFilter("week")}
+                  className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
+                    statusColorFilter === "week"
+                      ? "bg-purple-600 text-white"
+                      : "text-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40"
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                  ৭ দিন ({weekTasks})
+                </button>
+                <button
+                  onClick={() => setStatusColorFilter("completed")}
+                  className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
+                    statusColorFilter === "completed"
+                      ? "bg-emerald-600 text-white"
+                      : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40"
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  সম্পন্ন ({completedTasks})
+                </button>
+              </div>
             </div>
 
-            {todayTasks.length === 0 ? (
-              <p className="text-xs text-stone-400 py-3 text-center">
-                আজকের জন্য কোনো পেন্ডিং কাজ নির্ধারিত নেই।
+            {/* Render Color-Coded Tasks */}
+            {filteredTasks.length === 0 ? (
+              <p className="text-xs text-stone-400 py-4 text-center">
+                এই ক্যাটাগরিতে কোনো কাজ পাওয়া যায়নি।
               </p>
             ) : (
-              <div className="divide-y divide-stone-100 dark:divide-zinc-800/80">
-                {todayTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="py-3 flex items-start justify-between gap-3 group"
-                  >
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      {/* Checkbox */}
-                      <button
-                        onClick={() => toggleTask(task.id)}
-                        className={`mt-0.5 h-4.5 w-4.5 rounded border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                          task.completed
-                            ? "bg-zinc-900 dark:bg-zinc-100 border-zinc-900 dark:border-zinc-100 text-white dark:text-zinc-950"
-                            : "border-stone-300 dark:border-zinc-700 hover:border-zinc-950 bg-transparent"
-                        }`}
-                        title={task.completed ? "Mark incomplete" : "Mark as done"}
-                      >
-                        {task.completed && <Check className="h-3 w-3 stroke-[3]" />}
-                      </button>
+              <div className="space-y-2.5">
+                {filteredTasks.map((task) => {
+                  const meta = getTaskColorMeta(task);
 
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            onClick={() => toggleTask(task.id)}
-                            className={`text-xs sm:text-sm font-medium cursor-pointer ${
-                              task.completed
-                                ? "line-through text-stone-400 dark:text-zinc-500 font-normal"
-                                : "text-zinc-900 dark:text-white"
-                            }`}
-                          >
-                            {task.title}
-                          </span>
-                          {task.isUrgent && (
-                            <span className="text-[9px] font-studio-mono text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.2 rounded font-semibold">
-                              URGENT
+                  return (
+                    <div
+                      key={task.id}
+                      className={`p-3.5 sm:p-4 rounded-xl border transition-all ${meta.borderAccent} ${meta.cardBg} border-stone-200/70 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group`}
+                    >
+                      {/* Left: Checkbox + Title + Description */}
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        {/* Interactive Checkbox */}
+                        <button
+                          onClick={() => toggleTask(task.id)}
+                          className={`mt-0.5 h-5 w-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                            task.completed
+                              ? "bg-emerald-600 border-emerald-600 text-white"
+                              : "border-stone-300 dark:border-zinc-600 hover:border-zinc-950 bg-white dark:bg-zinc-800"
+                          }`}
+                          title={task.completed ? "Mark incomplete" : "Mark as done"}
+                        >
+                          {task.completed && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                        </button>
+
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              onClick={() => toggleTask(task.id)}
+                              className={`text-sm font-semibold cursor-pointer ${
+                                task.completed
+                                  ? "line-through text-stone-400 dark:text-zinc-500 font-normal"
+                                  : "text-zinc-950 dark:text-white"
+                              }`}
+                            >
+                              {task.title}
                             </span>
+
+                            {/* Color-Coded Status Badge */}
+                            <span className={`text-[10px] font-studio-mono px-2 py-0.5 rounded border font-semibold ${meta.badgeClass}`}>
+                              {meta.badgeText}
+                            </span>
+
+                            {isHead && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 font-medium">
+                                {task.assigneeName}
+                              </span>
+                            )}
+                          </div>
+
+                          {task.notes && (
+                            <p className="text-xs text-stone-600 dark:text-zinc-400 leading-relaxed font-normal">
+                              <strong className="text-zinc-800 dark:text-zinc-200 font-medium">নির্দেশনা:</strong> {task.notes}
+                            </p>
                           )}
-                          {isHead && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 font-medium">
-                              {task.assigneeName}
-                            </span>
+
+                          {task.location && (
+                            <div className="flex items-center gap-2 text-[11px] text-stone-500 pt-0.5">
+                              <span className="flex items-center gap-1 text-stone-600 dark:text-zinc-300 font-medium">
+                                <MapPin className="h-3 w-3 text-stone-400" />
+                                {task.location}
+                              </span>
+                              {task.shootTime && <span>• {task.shootTime}</span>}
+                            </div>
                           )}
                         </div>
+                      </div>
 
-                        {task.notes && (
-                          <p className="text-xs text-stone-500 dark:text-zinc-400 leading-relaxed">
-                            <strong className="text-zinc-700 dark:text-zinc-300 font-medium">নির্দেশনা:</strong> {task.notes}
-                          </p>
-                        )}
+                      {/* Right: Due Date + Status Quick Switcher */}
+                      <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 text-xs pt-1 sm:pt-0 border-t sm:border-t-0 border-stone-200/40">
+                        <span className="font-studio-mono text-[11px] text-stone-500 font-medium">
+                          {task.dueDate}
+                        </span>
 
-                        {task.location && (
-                          <div className="flex items-center gap-2 text-[11px] text-stone-500">
-                            <span className="flex items-center gap-1 text-stone-600 dark:text-zinc-300">
-                              <MapPin className="h-3 w-3 text-stone-400" />
-                              {task.location}
-                            </span>
-                            {task.shootTime && <span>• {task.shootTime}</span>}
-                          </div>
+                        {/* Status Toggle Switcher */}
+                        <button
+                          onClick={() => cycleTaskStatus(task.id)}
+                          className="px-2.5 py-1 rounded text-[11px] font-medium bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 hover:border-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                          title="স্ট্যাটাস পরিবর্তন করুন (হয় নাই / আজকের কাজ / সম্পন্ন)"
+                        >
+                          স্ট্যাটাস বদলান ↺
+                        </button>
+
+                        {isHead && (
+                          <button
+                            onClick={() => deleteTask(task.id)}
+                            className="p-1 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            title="কাজ ডিলিট করুন"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0 text-[11px] text-stone-400 font-studio-mono">
-                      <span>{task.dueDate}</span>
-                      {isHead && (
-                        <button
-                          onClick={() => deleteTask(task.id)}
-                          className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-rose-600 p-1 transition-opacity cursor-pointer"
-                          title="কাজ ডিলিট করুন"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1148,7 +1429,6 @@ export default function SwaponsWorldApp() {
                     className="p-4.5 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
                   >
                     <div>
-                      {/* Top Header of Card */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <div className="h-7 w-7 rounded bg-stone-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -1203,7 +1483,6 @@ export default function SwaponsWorldApp() {
                       )}
                     </div>
 
-                    {/* Bottom Metadata & Links */}
                     <div className="pt-2.5 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 text-[11px] text-stone-400">
                         <span>{file.ownerName}</span>
@@ -1241,16 +1520,21 @@ export default function SwaponsWorldApp() {
         </section>
       </main>
 
-      {/* ADMIN MODAL: ADD TASK (কাজ বুঝিয়ে দেওয়া ও অ্যাসাইন করা) */}
+      {/* ========================================================================= */}
+      {/* ADMIN MODAL: SMART AUTOMATED TASK DELEGATION                             */}
+      {/* ========================================================================= */}
       {showAddTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
               <div>
-                <h3 className="text-base font-bold text-zinc-950 dark:text-white">
-                  নতুন কাজ অ্যাসাইন করুন ও বুঝিয়ে দিন
+                <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  <span>স্মার্ট অটোমেশন — নতুন কাজ অ্যাসাইন করুন</span>
                 </h3>
-                <p className="text-xs text-stone-400">অ্যাডমিন হিসেবে টিম মেম্বারদের জন্য কাজ বুঝিয়ে দিন</p>
+                <p className="text-xs text-stone-400">
+                  নিচের অটোমেশন বাটনগুলোতে ক্লিক করলেই রিলস, ভয়েসওভার বা ৭ দিনের শিডিউল একা একাই পূরণ হয়ে যাবে।
+                </p>
               </div>
               <button
                 onClick={() => setShowAddTaskModal(false)}
@@ -1260,6 +1544,137 @@ export default function SwaponsWorldApp() {
               </button>
             </div>
 
+            {/* 1-CLICK AUTOMATION PRESETS */}
+            <div className="p-3 rounded-xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/80 space-y-2">
+              <span className="text-[11px] font-studio-mono uppercase tracking-wider text-stone-500 font-semibold block">
+                ⚡ ১-ক্লিক অটোমেশন প্রিসেট (One-Click Auto Templates):
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyAutomationPreset("reels")}
+                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 dark:border-amber-900/60 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
+                >
+                  <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
+                    📱 রিলস ও শর্টস (৯:১৬)
+                  </span>
+                  <span className="text-[10px] text-stone-500 block">আজকের জরুরি কাজ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyAutomationPreset("voiceover")}
+                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-blue-200 dark:border-blue-900/60 hover:border-blue-500 text-left transition-all cursor-pointer shadow-2xs group"
+                >
+                  <span className="text-xs font-bold text-blue-900 dark:text-blue-300 block">
+                    🎙️ ভয়েসওভার ও সাউন্ড
+                  </span>
+                  <span className="text-[10px] text-stone-500 block">আজ রাত ৮টা</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyAutomationPreset("youtube")}
+                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-purple-200 dark:border-purple-900/60 hover:border-purple-500 text-left transition-all cursor-pointer shadow-2xs group"
+                >
+                  <span className="text-xs font-bold text-purple-900 dark:text-purple-300 block">
+                    📺 ইউটিউব ফুল ভিডিও
+                  </span>
+                  <span className="text-[10px] text-stone-500 block">আগামী ৭ দিনের ভেতর</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyAutomationPreset("banner")}
+                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-emerald-200 dark:border-emerald-900/60 hover:border-emerald-500 text-left transition-all cursor-pointer shadow-2xs group"
+                >
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 block">
+                    🎨 সোশ্যাল ব্যানার সেট
+                  </span>
+                  <span className="text-[10px] text-stone-500 block">আজকের কাজ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyAutomationPreset("catalog")}
+                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-stone-200 hover:border-zinc-500 text-left transition-all cursor-pointer shadow-2xs group"
+                >
+                  <span className="text-xs font-bold text-zinc-900 dark:text-white block">
+                    📖 ক্যাটালগ ও ফটো
+                  </span>
+                  <span className="text-[10px] text-stone-500 block">৭ দিনের শিডিউল</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyAutomationPreset("shoot_outdoor")}
+                  className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-amber-200 hover:border-amber-500 text-left transition-all cursor-pointer shadow-2xs group"
+                >
+                  <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
+                    📹 আউটডোর শুট
+                  </span>
+                  <span className="text-[10px] text-stone-500 block">আজ দুপুর ২:৩০ PM</span>
+                </button>
+              </div>
+            </div>
+
+            {/* AUTOMATED TIMELINE SWITCHER */}
+            <div className="space-y-1.5">
+              <label className="block text-zinc-700 dark:text-zinc-300 font-semibold text-xs">
+                কখন শেষ করতে হবে? (অটোমেশন ডেডলাইন)
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => applyTimelinePreset("today")}
+                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    newCategory === "today"
+                      ? "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                  }`}
+                >
+                  ⚡ আজকের কাজ (Today)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyTimelinePreset("tomorrow")}
+                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    newCategory === "tomorrow"
+                      ? "border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200"
+                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                  }`}
+                >
+                  📅 কালকের কাজ (Tomorrow)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyTimelinePreset("7days")}
+                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    newCategory === "7days"
+                      ? "border-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-950 dark:text-purple-200"
+                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                  }`}
+                >
+                  🟣 আগামী ৭ দিন (7 Days)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyTimelinePreset("15days")}
+                  className={`py-2 px-2.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                    newCategory === "15days"
+                      ? "border-zinc-950 bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                      : "border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                  }`}
+                >
+                  🏆 ১৫ দিনের প্রজেক্ট
+                </button>
+              </div>
+            </div>
+
+            {/* FORM FIELDS */}
             <form onSubmit={handleAddTask} className="space-y-3.5 text-xs">
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
@@ -1270,7 +1685,7 @@ export default function SwaponsWorldApp() {
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="যেমন: সামার সেলস ভার্টিক্যাল রিলস এডিটিং"
+                  placeholder="যেমন: নতুন ঈদ ক্যাম্পেইনের রিলস এডিটিং"
                   className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-950"
                 />
               </div>
@@ -1289,25 +1704,21 @@ export default function SwaponsWorldApp() {
                     }}
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                   >
-                    <option value="video_editor">🎬 ভিডিও এডিটর (যেকোনো এডিটর নিতে পারবেন)</option>
+                    <option value="video_editor">🎬 ভিডিও এডিটর (যে কেউ নিতে পারবে)</option>
                     <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
                     <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সময়সীমা / ডেডলাইন *</label>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value as any)}
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সময়সীমা টেক্সট</label>
+                  <input
+                    type="text"
+                    value={newDueDate}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                    placeholder="যেমন: আজকের ভেতর (Today)"
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                  >
-                    <option value="today">আজকের কাজ (Today)</option>
-                    <option value="tomorrow">আগামীকালকের কাজ (Tomorrow)</option>
-                    <option value="3days">৩ দিনের ভেতর</option>
-                    <option value="7days">৭ দিনের শিডিউল</option>
-                    <option value="15days">১৫ দিনের মাইলস্টোন</option>
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -1326,10 +1737,10 @@ export default function SwaponsWorldApp() {
 
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  কাজের সম্পূর্ণ নির্দেশনা ও ব্রিফ (যাতে মেম্বার কাজ বুঝে নিতে পারে) *
+                  কাজের সম্পূর্ণ নির্দেশনা ও ব্রিফ *
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   required
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
@@ -1344,7 +1755,7 @@ export default function SwaponsWorldApp() {
                     type="checkbox"
                     checked={newIsUrgent}
                     onChange={(e) => setNewIsUrgent(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded text-zinc-900"
+                    className="h-3.5 w-3.5 rounded text-amber-600"
                   />
                   <span>জরুরি কাজ (Urgent Priority)</span>
                 </label>
@@ -1360,7 +1771,7 @@ export default function SwaponsWorldApp() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold"
+                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
                 >
                   কাজ অ্যাসাইন করুন
                 </button>
