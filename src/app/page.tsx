@@ -830,9 +830,13 @@ export default function SwaponsWorldApp() {
     return (
       <div className="min-h-screen bg-[#fafaf9] dark:bg-[#0c0c0d] text-[#18181b] dark:text-[#f4f4f5] flex items-center justify-center p-4 selection:bg-zinc-900 selection:text-white">
         <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="text-center space-y-1.5">
-            <div className="h-10 w-10 rounded-xl bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 flex items-center justify-center font-studio-mono font-bold text-sm mx-auto shadow-2xs">
-              SW
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 mx-auto w-fit shadow-xs">
+              <img
+                src="/logo.png"
+                alt="স্বপনস ওয়ার্ল্ড লোগো"
+                className="h-10 sm:h-12 w-auto object-contain"
+              />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-zinc-950 dark:text-white">
               স্বপনস ওয়ার্ল্ড স্টুডিও
@@ -974,8 +978,12 @@ export default function SwaponsWorldApp() {
       <header className="sticky top-0 z-40 bg-[#fafaf9]/90 dark:bg-[#0c0c0d]/90 backdrop-blur-md border-b border-stone-200 dark:border-zinc-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 flex items-center justify-center font-studio-mono font-bold text-xs shrink-0 shadow-2xs">
-              SW
+            <div className="h-10 px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-center shrink-0 shadow-2xs">
+              <img
+                src="/logo.png"
+                alt="স্বপনস ওয়ার্ল্ড লোগো"
+                className="h-7 w-auto object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
