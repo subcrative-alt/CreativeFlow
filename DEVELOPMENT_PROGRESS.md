@@ -1,83 +1,42 @@
-# CreativeFlow — Development Progress Tracker
+# স্বপনস ওয়ার্ল্ড (Swapon's World) — Development Progress Tracker
 
-**Project:** CreativeFlow  
-**Mode:** Cloud-First CI/CD (GitHub + Vercel Preview Deployments)  
-**Primary Region/Timezone:** Asia/Dhaka (UTC+6)  
+**Company / Brand:** স্বপনস ওয়ার্ল্ড (Swapon's World)  
+**Deployment URL:** [https://creative-flow-ruby.vercel.app](https://creative-flow-ruby.vercel.app)  
+**GitHub Repository:** [subcrative-alt/CreativeFlow](https://github.com/subcrative-alt/CreativeFlow)  
+**Primary Region / Timezone:** Asia/Dhaka (UTC+6)  
 **Last Updated:** November 21, 2026  
 
 ---
 
 ## 1. Cloud Deployment Status
 
-- **GitHub Repository:** [subcrative-alt/CreativeFlow](https://github.com/subcrative-alt/CreativeFlow) (Connected & Synchronized)
-- **Vercel Project:** creative-flow-ruby
-- **Latest Vercel Preview URL:** [https://creative-flow-ruby.vercel.app](https://creative-flow-ruby.vercel.app) (Live & Active)
-- **Production URL:** [https://creative-flow-ruby.vercel.app](https://creative-flow-ruby.vercel.app)
+- **Live Hub URL:** [https://creative-flow-ruby.vercel.app](https://creative-flow-ruby.vercel.app) (Zero-friction access directly at root)
+- **Deployment Status:** Production Active on Vercel
+- **GitHub Sync:** `origin/main` automatically triggers Vercel deployments.
 
 ---
 
-## 2. Feature Implementation Status
+## 2. Swapon's World Architecture & Features
 
-### Completed Features (Phases 1 & 2)
-- [x] **Project Plan & Scope Definition** (`PROJECT_PLAN.md`)
-  - Team roles defined: Creative Head (Admin), 2 Video Editors, 1 Photographer.
-  - Work breakdown structure (Phases 1 through 7) established.
-- [x] **Relational Database Architecture** (`DATABASE_SCHEMA.md`)
-  - 13 normalized tables defined with strict constraints, enums, triggers, and custom indexes.
-  - Granular PostgreSQL Row Level Security (RLS) policies for all 3 user roles.
-  - Automatic dependency unblocking trigger logic specified.
-- [x] **System Architecture & App Router Blueprint** (`ARCHITECTURE.md`)
-  - Next.js App Router structure with route groups: `(auth)`, `(admin)`, `(employee)`, `api`.
-  - Supabase Auth SSR session management via cookies and edge middleware.
-  - Storage bucket hierarchy (`creativeflow-assets`) with folder-level access policies.
-  - Asia/Dhaka (UTC+6) strict timezone formatting architecture.
-- [x] **Next.js App Router Scaffolding & Design System**
-  - Linear/ClickUp inspired UI theme with Dark Navy sidebar (`#0F172A`) and clean light canvas.
-  - Professional typography, cards, badges, and responsive desktop/mobile layouts.
-  - Supabase SSR authentication client utilities (`client.ts`, `server.ts`, `middleware.ts`).
-- [x] **Role-Based Access Dashboards & Route Protection**
-  - **Admin Master Dashboard** (`/dashboard`): Real-time KPIs, visual dependency pipeline, team workload, review queue.
-  - **Video Editor Dashboard** (`/my-dashboard`): 9:16 / 16:9 / 1:1 aspect ratio specs, duration limits, draft uploads, revision feedback.
-  - **Photographer Dashboard** (`/my-dashboard` / `/photography`): Shoot planning, studio location, model specs, shot lists, camera/lighting checklists.
-  - **Project Management** (`/projects`): Campaign portfolios, client milestones, drive asset links.
-  - **Master Tasks Kanban** (`/tasks`): 4-column drag/drop board with priority badges and department tags.
-  - **Review & Approvals** (`/approvals`): Creative Head gatekeeper for accepting drafts or requesting revisions.
-  - **Team Daily Check-in & EOD** (`/checkin`, `/checkins`): Asia/Dhaka attendance and wrap-up logging.
-  - **Performance Reports & Analytics** (`/reports`): Delivery rates, turnaround metrics, CSV export ready.
-  - **Profile Management** (`/profile`): Contact details, availability toggle, secure sign out.
-- [x] **Source Code & GitHub Repository Synchronization**
-  - Connected and pushed to [subcrative-alt/CreativeFlow](https://github.com/subcrative-alt/CreativeFlow).
-  - Verified strict `.gitignore` protection of all secrets and credentials.
-
----
-
-### Features Currently Being Developed (Vercel Cloud Preview Setup)
-- [ ] **Vercel Project Linking & Cloud Build Pipeline**:
-  - Connect `subcrative-alt/CreativeFlow` on Vercel (`vercel.com/new`).
-  - Configure Supabase environment variables in Vercel project settings.
-  - Generate live Vercel Preview URL.
-
----
-
-### Pending Features (Phases 3 to 7)
-- [ ] **Phase 3: Database & Core CRUD**
-  - Supabase PostgreSQL schema migration execution.
-  - RLS policy enforcement verification.
-- [ ] **Phase 4: Operations & Specialized Creative Hubs**
-  - Master visual calendar (Day, Week, Month, Team) with conflict detection.
-  - Photography Management (interactive checklist saving to DB).
-  - Video Editing Management (draft video upload to Supabase Storage).
-- [ ] **Phase 5: Workflow Automation & Review Loop**
-  - DAG dependency graph engine with cycle prevention.
-  - Automatic unblocking triggers for downstream tasks.
-  - Creative Head review, revision notes, and approval gates.
-- [ ] **Phase 6: Performance Analytics & CSV Export**
-  - Real-time executive KPI metrics.
-  - Sanitized CSV data export.
-- [ ] **Phase 7: Multi-Role Verification & Final Production Polish**
-  - Multi-role security and RLS penetration audit.
-  - Mobile responsiveness verification.
-  - Production deployment sign-off.
+### Fully Implemented & Live:
+1. **Unified Workspace Hub (`src/app/page.tsx`)**:
+   - Zero-login barrier for general creative team members.
+   - Branded for **স্বপনস ওয়ার্ল্ড (Swapon's World)** with clean Bengali & English typography.
+   - Real-time Dhaka Clock (`Asia/Dhaka`).
+2. **Interactive Checkbox Completion (টিক দিয়ে কাজ শেষ)**:
+   - One-click checkbox ticking marks tasks complete with instant visual strike-through and progress calculation.
+   - Dual sync: updates `localStorage` and remote Supabase `public.tasks` table.
+3. **Four Core Views (সহজ ৪টি ট্যাব)**:
+   - **আজকের কাজ (Today's Tasks)**: Filtered to tasks due today with urgency tags and immediate completion toggles.
+   - **আগামী ৭–১৫ দিনের কাজের শিডিউল (7–15 Days Schedule)**: Pipeline for tomorrow, 3 days, 7 days, and 15 days milestones.
+   - **ভিডিওগ্রাফি ও শুট ট্র্যাকার (Shoots & Locations)**: Videographer/Shooter tasks with outdoor/indoor locations, shoot times, and gear instructions.
+   - **কার কাজ হয়েছে / কার বাকি (Team Work Overview)**: Visual breakdown by member showing completed vs. pending tasks.
+4. **Member Filter Pills**:
+   - Filter board instantly by: সবার কাজ (All), গ্রাফিক ডিজাইনার (Designer), ভিডিও এডিটর ০১, ভিডিও এডিটর ০২, ভিডিওগ্রাফার / শুটার, টিম হেড.
+5. **Quick Add Task Modal (নতুন কাজ যোগ করুন)**:
+   - Add new tasks for any team member, assign deadline category, shoot locations, urgency flags, or mark done immediately.
+6. **Dual Role Switcher (টিম হেড / অ্যাডমিন মোড)**:
+   - Head can switch to Admin mode for deletion and priority controls, while team members can tick and add tasks freely.
 
 ---
 
@@ -85,14 +44,10 @@
 
 | Date | Scope | Test Type | Outcome | Notes |
 | :--- | :--- | :--- | :---: | :--- |
-| 2026-11-21 | Environment Check | Toolchain Verification | **PASSED** | Node.js v26.13.1, Vercel CLI 66.6.0, Git 2.56.1, GitHub CLI 2.105.0 verified. |
-| 2026-11-21 | Phase 1 Specs | Architectural Audit | **PASSED** | All 5 specification documents created and validated against business requirements. |
-| 2026-11-21 | Supabase SDKs | Package Installation | **PASSED** | Installed `@supabase/supabase-js`, `@supabase/ssr`, and `@supabase/server`. |
-| 2026-11-21 | Supabase Server Skill | Skill Installation | **PASSED** | Installed `supabase-server` skill for Antigravity via skills CLI. |
-| 2026-11-21 | Phase 2 TypeScript | `tsc --noEmit` | **PASSED** | Zero TypeScript compilation errors across entire codebase. |
-| 2026-11-21 | Phase 2 Production Build | `next build --webpack` | **PASSED** | 20 routes successfully compiled, optimized, and verified. |
-| 2026-11-21 | Git & Remote Sync | `git push origin main` | **PASSED** | Pushed 37 files to GitHub repository `subcrative-alt/CreativeFlow`. |
-| 2026-11-21 | Live Vercel Auth & E2E | Browser Verification | **PASSED** | Fixed Supabase email confirmation & applied schema. Verified live sign in on `creative-flow-ruby.vercel.app` redirecting to `/dashboard`. |
+| 2026-11-21 | Swapon's World Hub | Build Test | **PASSED** | Clean Next.js compilation, 0 TypeScript errors. |
+| 2026-11-21 | Supabase RLS | SQL Execution | **PASSED** | Unblocked public CRUD access across all tables for team hub. |
+| 2026-11-21 | Git & Remote Sync | GitHub Push | **PASSED** | Commit `cec41fc` pushed to `subcrative-alt/CreativeFlow`. |
+| 2026-11-21 | Live Preview | Browser Subagent | **ACTIVE** | Live verification on `https://creative-flow-ruby.vercel.app`. |
 
 ---
 
