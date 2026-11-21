@@ -38,9 +38,17 @@ import {
   CheckCircle,
   AlertTriangle,
   RotateCcw,
+  Copy,
+  Pencil,
+  Undo2,
+  CheckCheck,
+  PlaySquare,
+  Archive,
+  Hourglass,
+  FileCheck,
 } from "lucide-react";
 
-// Team Roles for Swapon's World (Consolidated Video Editor pool)
+// Team Roles for Swapon's World
 export type TeamMember = "all" | "head" | "video_editor" | "designer" | "videographer";
 
 export interface SwaponTask {
@@ -54,6 +62,8 @@ export interface SwaponTask {
   completed: boolean;
   statusState?: "not_done" | "in_progress" | "completed";
   notes?: string;
+  referenceVideoUrl?: string; // রেফারেন্স ভিডিওর লিংক (YouTube, Reels, Drive)
+  scriptText?: string;        // সম্পূর্ণ স্ক্রিপ্ট বা ভয়েসওভার টেক্সট
   driveUrl?: string;
   location?: string;
   shootTime?: string;
@@ -74,6 +84,8 @@ export interface StudioFile {
   status: "ready_for_review" | "approved" | "needs_revision" | "in_progress";
   uploadedAt: string;
   notes?: string;
+  referenceVideoUrl?: string;
+  scriptText?: string;
 }
 
 export interface AuthSession {
@@ -82,7 +94,7 @@ export interface AuthSession {
   displayName: string;
 }
 
-// Initial Tasks with Distinct Color Categories
+// Initial Tasks with Realistic Production Details, Reference Links & Voiceover Scripts
 const INITIAL_TASKS: SwaponTask[] = [
   // 1. 🟡 আজকের জরুরি কাজ (Action Today - Amber)
   {
@@ -95,7 +107,16 @@ const INITIAL_TASKS: SwaponTask[] = [
     dueDate: "আজ সন্ধ্যা ৬:০০ (Today)",
     completed: false,
     isUrgent: true,
-    notes: "প্রথম ৩ সেকেন্ডের হুক, ফাস্ট ট্রানজিশন এবং ট্রেন্ডিং সাউন্ড এফেক্টস সিঙ্ক।",
+    referenceVideoUrl: "https://youtube.com/shorts/sample-reels-reference",
+    scriptText: `[হুক (০-৩ সেকেন্ড)]:
+"আপনি কি জানেন আপনার বিজনেসের সেলস ৩০% কমে যেতে পারে মাত্র একটি ভুলের কারণে?"
+
+[বডি (৩-২০ সেকেন্ড)]:
+"স্বপনস ওয়ার্ল্ড এর প্রিমিয়াম ভিডিও প্রোডাকশন দিয়ে আপনার ব্র‍্যান্ডকে নিয়ে যান অনন্য উচ্চতায়। হাই-কোয়ালিটি সিনেমাটিক ফুটেজ ও ট্রেন্ডিং বিটস।"
+
+[কল টু অ্যাকশন (২০-৩০ সেকেন্ড)]:
+"দেরি না করে আজই বায়োতে দেওয়া লিংকে ক্লিক করুন অথবা ইনবক্সে মেসেজ পাঠান!"`,
+    notes: "প্রথম ৩ সেকেন্ডের হুক, ফাস্ট ট্রানজিশন এবং ট্রেন্ডিং সাউন্ড এফেক্টস সিঙ্ক করবেন। ড্রাইভ থেকে ফুটেজ ফোল্ডার লিঙ্ক করুন।",
   },
   // 2. 🟡 আজকের কাজ — ভয়েসওভার সিঙ্ক (Action Today - Amber)
   {
@@ -108,6 +129,10 @@ const INITIAL_TASKS: SwaponTask[] = [
     dueDate: "আজ রাত ৮:০০ (Today)",
     completed: false,
     isUrgent: true,
+    referenceVideoUrl: "https://drive.google.com/file/d/voiceover-audio-reference/view",
+    scriptText: `[ভয়েসওভার মাস্টার স্ক্রিপ্ট — স্বপনস ওয়ার্ল্ড ক্রিয়েটিভ স্টুডিও]:
+"সঠিক পরিকল্পনাই একটি সফল ব্র্যান্ডের মূল ভিত্তি। প্রতিটি ভিজ্যুয়াল, প্রতিটি কালার টোন আর প্রতিটি কাট—আমরা সাজিয়ে তুলি আপনার স্বপ্নের মতো করে। কারণ আপনার গল্পটি অসাধারণ হতে বাধ্য।"
+(নির্দেশনা: ব্যাকগ্রাউন্ড সাউন্ড -14 LUFS নরম্যালাইজ করুন, নয়েজ ফ্রি অডিও মাস্টার করবেন)`,
     notes: "ভয়েসওভার ক্লিন করা, ব্যাকগ্রাউন্ড নয়েজ রিমুভ ও সাউন্ড লেভেল -14 LUFS নরম্যালাইজেশন।",
   },
   // 3. 🔴 যে কাজ হয় নাই / পেন্ডিং (Not Done / Pending - Rose/Red)
@@ -121,6 +146,9 @@ const INITIAL_TASKS: SwaponTask[] = [
     dueDate: "কালকের ভেতরেই শেষ করতে হবে",
     completed: false,
     statusState: "not_done",
+    referenceVideoUrl: "https://youtube.com/shorts/product-teaser-sample",
+    scriptText: `[টিজার টেক্সট সুপার ও ভয়েসওভার]:
+"আগামীকাল আসছে নতুন চমক। চোখ রাখুন স্বপনস ওয়ার্ল্ড পেইজে!"`,
     notes: "হেডের রিভিউ নোট: মিউজিকের বিটের সাথে কাট ফাস্ট করতে হবে। আগের কাজ এখনও সম্পন্ন হয় নাই।",
   },
   // 4. 🟣 আগামী ৭ দিনের ভেতর কাজ (Upcoming 7 Days - Purple)
@@ -133,9 +161,12 @@ const INITIAL_TASKS: SwaponTask[] = [
     deadlineCategory: "7days",
     dueDate: "আগামী ৭ দিনের ভেতর (7 Days)",
     completed: false,
+    referenceVideoUrl: "https://youtube.com/watch?v=sample-documentary-grade",
+    scriptText: `[ডকুমেন্টারি ভয়েসওভার পর্ব ০১]:
+"ঢাকার বুকে ক্রিয়েটিভ ইন্ডাস্ট্রির নতুন বিপ্লব শুরু হয়েছিল এই স্টুডিও থেকেই। যেখানে আইডিয়া রূপ নেয় সেলুলয়েডের পর্দায়..."`,
     notes: "১৬:৯ ইউটিউব মাস্টার কাট, বি-রোল সিঙ্ক, সাউন্ড ডিজাইন ও Rec.709 কালার গ্রেডিং।",
   },
-  // 5. 🟢 কাজ সম্পন্ন হয়েছে (Done - Emerald)
+  // 5. 🟢 কাজ সম্পন্ন ও অ্যাপ্রুভড (Done / Approved - Emerald)
   {
     id: "task-vid-5",
     title: "ইউটিউব ইন্ট্রো ও মোশন গ্রাফিক্স কাট",
@@ -146,10 +177,11 @@ const INITIAL_TASKS: SwaponTask[] = [
     dueDate: "আজ দুপুর ২:০০",
     completed: true,
     statusState: "completed",
-    notes: "ফাইনাল রেন্ডার সম্পন্ন হয়েছে এবং ড্রাইভে আপলোড করা আছে।",
+    referenceVideoUrl: "https://youtube.com/watch?v=intro-motion-ref",
+    notes: "ফাইনাল রেন্ডার সম্পন্ন হয়েছে এবং ড্রাইভ স্টুডিও ফোল্ডারে আপলোড করা আছে।",
   },
 
-  // Graphic Design Tasks (Color Coded)
+  // Graphic Design Tasks
   {
     id: "task-des-1",
     title: "সামার কালেকশন সোশ্যাল মিডিয়া ব্যানার সেট (১০৮০x১০৮০)",
@@ -160,6 +192,9 @@ const INITIAL_TASKS: SwaponTask[] = [
     dueDate: "আজ দুপুর ৩:০০ (Today)",
     completed: false,
     isUrgent: true,
+    scriptText: `[ব্যানার টেক্সট ও টাইপোগ্রাফি]:
+"SUMMER DROP 2026 • FLAT 40% OFF"
+সাব-টেক্সট: "Shop Now at Swapon's World"`,
     notes: "ফেসবুক ও ইনস্টাগ্রাম স্কয়ার পোস্ট এবং স্টোরি সাইজ প্রস্তুত করতে হবে।",
   },
   {
@@ -182,11 +217,12 @@ const INITIAL_TASKS: SwaponTask[] = [
     department: "design",
     deadlineCategory: "7days",
     dueDate: "আগামী ৭ দিনের শিডিউল",
-    completed: false,
-    notes: "প্রোডাক্ট লুকবুক ও স্কিন রিটাচিং ক্লায়েন্ট ফাইনাল ডেলিভারির জন্য।",
+    completed: true,
+    statusState: "completed",
+    notes: "প্রোডাক্ট লুকবুক ও স্কিন রিটাচিং ক্লায়েন্ট ফাইনাল ডেলিভারির জন্য প্রস্তুত ও অ্যাপ্রুভড।",
   },
 
-  // Videographer / Shooter Tasks (Color Coded)
+  // Videographer / Shooter Tasks
   {
     id: "task-sht-1",
     title: "নতুন প্রোডাক্ট ক্যাম্পেইন — আউটডোর শুট",
@@ -218,11 +254,11 @@ const INITIAL_TASKS: SwaponTask[] = [
   },
 ];
 
-// Initial Files
+// Initial Files with Separation of Review vs Approved
 const INITIAL_FILES: StudioFile[] = [
   {
     id: "file-vid-1",
-    title: "সামার সেলস ৯:১৬ ভার্টিক্যাল রিলস — ফাইনাল রেন্ডার",
+    title: "সামার সেলস ৯:১৬ ভার্টিক্যাল রিলস — ড্রাফট রেন্ডার",
     fileName: "Summer_Reels_Hook_V3_4K.mp4",
     fileType: "video",
     fileFormat: "MP4 (4K 60fps)",
@@ -232,7 +268,7 @@ const INITIAL_FILES: StudioFile[] = [
     ownerName: "ভিডিও এডিটর",
     status: "ready_for_review",
     uploadedAt: "২১ নভেম্বর, দুপুর ০১:১৫",
-    notes: "কালার গ্রেডিং Rec.709 স্ট্যান্ডার্ড এবং সাউন্ড লেভেল -14 LUFS নরম্যালাইজ করা হয়েছে।",
+    notes: "কালার গ্রেডিং Rec.709 স্ট্যান্ডার্ড এবং সাউন্ড লেভেল -14 LUFS নরম্যালাইজ করা হয়েছে। হেডের রিভিউর জন্য প্রস্তুত।",
   },
   {
     id: "file-vid-2",
@@ -244,9 +280,9 @@ const INITIAL_FILES: StudioFile[] = [
     driveUrl: "https://drive.google.com/drive/folders/swapons_world_video",
     owner: "video_editor",
     ownerName: "ভিডিও এডিটর",
-    status: "ready_for_review",
+    status: "needs_revision",
     uploadedAt: "২১ নভেম্বর, সকাল ১১:৪৫",
-    notes: "১৮ মিনিটের ইউটিউব মাস্টার কাট। থিম মিউজিক ও ভয়েসওভার ফাইনাল সিঙ্ক।",
+    notes: "হেডের কমেন্ট: বি-রোল কাটে আরো ২টা স্লো-মোশন শট যোগ করতে হবে। সাউন্ডের বিজিএম ভলিউম একটু কমাতে হবে।",
   },
   {
     id: "file-vid-3",
@@ -260,7 +296,7 @@ const INITIAL_FILES: StudioFile[] = [
     ownerName: "ভিডিও এডিটর",
     status: "approved",
     uploadedAt: "২০ নভেম্বর, সন্ধ্যা ০৭:০০",
-    notes: "সম্পূর্ণ প্রোজেক্ট ফাইল ও ট্রাঞ্জিশন প্রিসেট ড্রাইভে আপলোড করা।",
+    notes: "সম্পূর্ণ প্রোজেক্ট ফাইল ও ট্রাঞ্জিশন প্রিসেট ক্লায়েন্ট দ্বারা অ্যাপ্রুভড এবং ড্রাইভে ব্যাকআপ সংরক্ষিত।",
   },
   {
     id: "file-des-1",
@@ -274,7 +310,7 @@ const INITIAL_FILES: StudioFile[] = [
     ownerName: "গ্রাফিক ডিজাইনার",
     status: "approved",
     uploadedAt: "২১ নভেম্বর, দুপুর ১২:০০",
-    notes: "সবগুলো লেয়ার আনগ্রুপড ও ফন্ট আউটলাইন করা অবস্থায় আপলোড করা।",
+    notes: "সবগুলো লেয়ার আনগ্রুপড ও ফন্ট আউটলাইন করা অবস্থায় আপলোড করা। হেড অ্যাপ্রুভড।",
   },
   {
     id: "file-sht-1",
@@ -288,7 +324,7 @@ const INITIAL_FILES: StudioFile[] = [
     ownerName: "সিনেমাটোগ্রাফার / শুটার",
     status: "approved",
     uploadedAt: "২১ নভেম্বর, দুপুর ০১:০০",
-    notes: "সনি এফএক্সথ্রি দিয়ে শুট করা ৬০টি ক্লিপ গুগল ড্রাইভ স্টুডিওতে ব্যাকআপ সম্পন্ন।",
+    notes: "সনি এফএক্সথ্রি দিয়ে শুট করা ৬০টি ক্লিপ গুগল ড্রাইভ স্টুডিওতে ব্যাকআপ সম্পন্ন ও অ্যাপ্রুভড।",
   },
 ];
 
@@ -308,11 +344,18 @@ export default function SwaponsWorldApp() {
   const [files, setFiles] = useState<StudioFile[]>(INITIAL_FILES);
   const [dhakaTime, setDhakaTime] = useState("");
 
+  // Section Tabs (Separation of Pending vs Approved)
+  const [taskSectionTab, setTaskSectionTab] = useState<"pending" | "approved">("pending");
+  const [fileSectionTab, setFileSectionTab] = useState<"pending" | "approved">("pending");
+
   // Filter States
   const [adminViewFilter, setAdminViewFilter] = useState<TeamMember>("all");
   const [statusColorFilter, setStatusColorFilter] = useState<"all" | "today" | "not_done" | "week" | "completed">("all");
   const [fileSearch, setFileSearch] = useState("");
   const [fileTypeFilter, setFileTypeFilter] = useState("all");
+
+  // Clipboard Feedback State
+  const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
 
   // Add Task Modal & Automation State
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
@@ -321,12 +364,17 @@ export default function SwaponsWorldApp() {
   const [newCategory, setNewCategory] = useState<"today" | "tomorrow" | "3days" | "7days" | "15days">("today");
   const [newDepartment, setNewDepartment] = useState<"design" | "video" | "shoot" | "general">("video");
   const [newDueDate, setNewDueDate] = useState("");
+  const [newReferenceVideoUrl, setNewReferenceVideoUrl] = useState("");
+  const [newScriptText, setNewScriptText] = useState("");
   const [newNotes, setNewNotes] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newGearInfo, setNewGearInfo] = useState("");
   const [newIsUrgent, setNewIsUrgent] = useState(false);
 
-  // Add File Modal
+  // Edit Task Modal State (For accidental approval revert or editing)
+  const [editingTask, setEditingTask] = useState<SwaponTask | null>(null);
+
+  // Add File Modal (For Team Deliverable Submission)
   const [showAddFileModal, setShowAddFileModal] = useState(false);
   const [newFileTitle, setNewFileTitle] = useState("");
   const [newFileName, setNewFileName] = useState("");
@@ -335,6 +383,9 @@ export default function SwaponsWorldApp() {
   const [newFileSize, setNewFileSize] = useState("");
   const [newDriveUrl, setNewDriveUrl] = useState("");
   const [newFileNotes, setNewFileNotes] = useState("");
+
+  // Edit File Modal State (For accidental approval revert or editing)
+  const [editingFile, setEditingFile] = useState<StudioFile | null>(null);
 
   const supabase = createClient();
 
@@ -465,11 +516,25 @@ export default function SwaponsWorldApp() {
     localStorage.setItem("swapons_world_files", JSON.stringify(newFileList));
   };
 
-  // Toggle Task Complete with Color Cycle
+  // Copy Script to Clipboard
+  const handleCopyScript = (taskId: string, text: string) => {
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedTaskId(taskId);
+      setTimeout(() => setCopiedTaskId(null), 2000);
+    }
+  };
+
+  // Toggle Task Complete (Move between Pending & Approved Archive)
   const toggleTask = async (taskId: string) => {
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
-        return { ...t, completed: !t.completed, statusState: !t.completed ? ("completed" as const) : undefined };
+        const nextCompleted = !t.completed;
+        return {
+          ...t,
+          completed: nextCompleted,
+          statusState: nextCompleted ? ("completed" as const) : undefined,
+        };
       }
       return t;
     });
@@ -486,6 +551,28 @@ export default function SwaponsWorldApp() {
     } catch (e) {}
   };
 
+  // Revert an accidentally approved task back to pending
+  const revertTaskToPending = async (taskId: string) => {
+    const updated = tasks.map((t) => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          completed: false,
+          statusState: "not_done" as const,
+        };
+      }
+      return t;
+    });
+    updateTasks(updated);
+
+    try {
+      await supabase
+        .from("tasks")
+        .update({ status: "in_progress" })
+        .eq("id", taskId);
+    } catch (e) {}
+  };
+
   // Status Cycle: [হয় নাই / লাল] -> [আজকের কাজ / হলুদ] -> [সম্পন্ন / সবুজ]
   const cycleTaskStatus = (taskId: string) => {
     const updated = tasks.map((t) => {
@@ -495,7 +582,7 @@ export default function SwaponsWorldApp() {
           return { ...t, completed: false, statusState: "not_done" as const };
         } else if (t.statusState === "not_done") {
           // Switch to: আজকের কাজ / হলুদ
-          return { ...t, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" as const, dueDate: "আজকের ভেতর" };
+          return { ...t, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" as const, dueDate: "আজকের ভেতর (Today)" };
         } else {
           // Switch to: সম্পন্ন / সবুজ
           return { ...t, completed: true, statusState: "completed" as const };
@@ -527,6 +614,15 @@ export default function SwaponsWorldApp() {
         setNewCategory("today");
         setNewDueDate("আজকের ভেতর (Today)");
         setNewIsUrgent(true);
+        setNewReferenceVideoUrl("https://youtube.com/shorts/sample-reels-reference");
+        setNewScriptText(`[হুক (০-৩ সেকেন্ড)]:
+"আপনি কি জানেন আপনার বিজনেসের সেলস ৩০% কমে যেতে পারে মাত্র একটি ভুলের কারণে?"
+
+[বডি (৩-২০ সেকেন্ড)]:
+"স্বপনস ওয়ার্ল্ড এর প্রিমিয়াম ভিডিও প্রোডাকশন দিয়ে আপনার ব্র‍্যান্ডকে নিয়ে যান অনন্য উচ্চতায়। হাই-কোয়ালিটি সিনেমাটিক ফুটেজ ও ট্রেন্ডিং বিটস।"
+
+[কল টু অ্যাকশন (২০-৩০ সেকেন্ড)]:
+"দেরি না করে আজই বায়োতে দেওয়া লিংকে ক্লিক করুন অথবা ইনবক্সে মেসেজ পাঠান!"`);
         setNewNotes("প্রথম ৩ সেকেন্ডের হুক, দ্রুত ট্রানজিশন, কাইনেটিক সাবটাইটেল এবং ট্রেন্ডিং মিউজিক সিঙ্ক।");
         break;
 
@@ -537,6 +633,10 @@ export default function SwaponsWorldApp() {
         setNewCategory("today");
         setNewDueDate("আজ রাত ৮:০০");
         setNewIsUrgent(true);
+        setNewReferenceVideoUrl("https://drive.google.com/file/d/voiceover-audio-reference/view");
+        setNewScriptText(`[ভয়েসওভার মাস্টার স্ক্রিপ্ট — স্বপনস ওয়ার্ল্ড ক্রিয়েটিভ স্টুডিও]:
+"সঠিক পরিকল্পনাই একটি সফল ব্র্যান্ডের মূল ভিত্তি। প্রতিটি ভিজ্যুয়াল, প্রতিটি কালার টোন আর প্রতিটি কাট—আমরা সাজিয়ে তুলি আপনার স্বপ্নের মতো করে। কারণ আপনার গল্পটি অসাধারণ হতে বাধ্য।"
+(নির্দেশনা: ব্যাকগ্রাউন্ড সাউন্ড -14 LUFS নরম্যালাইজ করুন, নয়েজ ফ্রি অডিও মাস্টার করবেন)`);
         setNewNotes("ভয়েসওভারের ব্যাকগ্রাউন্ড নয়েজ রিমুভ, অ্যাম্বিয়েন্স লেভেল -14 LUFS নরম্যালাইজ এবং ডায়ালগ সিঙ্ক।");
         break;
 
@@ -547,6 +647,9 @@ export default function SwaponsWorldApp() {
         setNewCategory("7days");
         setNewDueDate("আগামী ৭ দিনের ভেতর (7 Days)");
         setNewIsUrgent(false);
+        setNewReferenceVideoUrl("https://youtube.com/watch?v=sample-documentary-grade");
+        setNewScriptText(`[ডকুমেন্টারি ভয়েসওভার পর্ব ০১]:
+"ঢাকার বুকে ক্রিয়েটিভ ইন্ডাস্ট্রির নতুন বিপ্লব শুরু হয়েছিল এই স্টুডিও থেকেই। যেখানে আইডিয়া রূপ নেয় সেলুলয়েডের পর্দায়..."`);
         setNewNotes("১৬:৯ ফুল এইচডি/৪কে রেন্ডার, বি-রোল ফুটেজ সিঙ্ক, সাউন্ড ইফেক্টস এবং Rec.709 কালার গ্রেডিং।");
         break;
 
@@ -557,6 +660,10 @@ export default function SwaponsWorldApp() {
         setNewCategory("today");
         setNewDueDate("আজকের ভেতর (Today)");
         setNewIsUrgent(true);
+        setNewReferenceVideoUrl("");
+        setNewScriptText(`[ব্যানার টাইপোগ্রাফি ও কপি]:
+"SUMMER DROP 2026 • FLAT 40% OFF"
+সাব-টেক্সট: "Shop Now at Swapon's World"`);
         setNewNotes("১০৮০x১০৮০ স্কয়ার পোস্ট এবং ১০৮০x১৯২০ ইনস্টাগ্রাম স্টোরি সাইজ। লেয়ারসহ পিএসডি ফাইল রেডি করুন।");
         break;
 
@@ -567,6 +674,9 @@ export default function SwaponsWorldApp() {
         setNewCategory("7days");
         setNewDueDate("আগামী ৭ দিনের শিডিউল");
         setNewIsUrgent(false);
+        setNewReferenceVideoUrl("");
+        setNewScriptText(`[লুকবুক কালার থিম]:
+"অটাম ওয়ার্ম টোনস, রিচ শ্যাডো, হাইপার-শার্প ফ্যাব্রিক ডিটেইলস।"`);
         setNewNotes("হাই-এন্ড স্কিন রিটাচিং, ব্যাকগ্রাউন্ড ক্লিনআপ এবং কালার ব্যালান্স ক্লায়েন্ট অ্যাপ্রুভালের জন্য।");
         break;
 
@@ -579,6 +689,11 @@ export default function SwaponsWorldApp() {
         setNewIsUrgent(true);
         setNewLocation("ধানমন্ডি লেক ও আউটডোর স্পট");
         setNewGearInfo("Sony FX3 • 24-70mm • Ronin RS3 Gimbal • 4K 60fps");
+        setNewReferenceVideoUrl("https://youtube.com/shorts/cinematic-outdoor-shoot");
+        setNewScriptText(`[শুট শট-লিস্ট]:
+১. মডেলের এন্ট্রি স্লো মোশন কাট (120fps)
+২. প্রোডাক্টের ম্যাক্রো ও টেক্সচার শট (24-70mm f/2.8)
+৩. সানসেট সিলুয়েট গোল্ডেন আওয়ার ট্রানজিশন`);
         setNewNotes("ন্যাচারাল গোল্ডেন আওয়ার লাইট, স্লো-মোশন ক্লোজ-আপ শট। ফুটেজ দ্রুত গুগল ড্রাইভ স্টুডিওতে ব্যাকআপ দিন।");
         break;
 
@@ -591,6 +706,9 @@ export default function SwaponsWorldApp() {
         setNewIsUrgent(false);
         setNewLocation("স্বপনস ওয়ার্ল্ড মেইন স্টুডিও (ফ্লোর ২)");
         setNewGearInfo("Aputure 300d II Softbox • C-Stands • Reflector Panel");
+        setNewReferenceVideoUrl("");
+        setNewScriptText(`[স্টুডিও লাইটিং গাইড]:
+৩-পয়েন্ট কি লাইট + হেয়ার লাইট রিম। ডার্ক গ্রে ব্যাকড্রপ।`);
         setNewNotes("ইনডোর থিম্যাটিক ব্যাকড্রপ ও লাইটিং গ্রিড সেটআপ। মডেল শট ডিভিশন চার্ট ফলো করুন।");
         break;
     }
@@ -636,6 +754,8 @@ export default function SwaponsWorldApp() {
       deadlineCategory: newCategory,
       dueDate: newDueDate || (newCategory === "today" ? "আজকের ভেতর (Today)" : newCategory === "tomorrow" ? "আগামীকাল" : newCategory === "7days" ? "আগামী ৭ দিনের ভেতর" : "১৫ দিনের প্রজেক্ট"),
       completed: false,
+      referenceVideoUrl: newReferenceVideoUrl.trim() || undefined,
+      scriptText: newScriptText.trim() || undefined,
       notes: newNotes.trim() || undefined,
       location: newLocation.trim() || undefined,
       gearInfo: newGearInfo.trim() || undefined,
@@ -660,6 +780,8 @@ export default function SwaponsWorldApp() {
 
     // Reset
     setNewTitle("");
+    setNewReferenceVideoUrl("");
+    setNewScriptText("");
     setNewNotes("");
     setNewLocation("");
     setNewGearInfo("");
@@ -668,7 +790,29 @@ export default function SwaponsWorldApp() {
     setShowAddTaskModal(false);
   };
 
-  // Add File
+  // Handle Edit Task Save
+  const handleSaveEditTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask) return;
+
+    const updated = tasks.map((t) => (t.id === editingTask.id ? editingTask : t));
+    updateTasks(updated);
+
+    try {
+      await supabase
+        .from("tasks")
+        .update({
+          title: editingTask.title,
+          description: editingTask.notes,
+          status: editingTask.completed ? "completed" : "in_progress",
+        })
+        .eq("id", editingTask.id);
+    } catch (e) {}
+
+    setEditingTask(null);
+  };
+
+  // Add File (Team Deliverables)
   const handleAddFile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFileTitle.trim() || !newFileName.trim()) return;
@@ -709,11 +853,14 @@ export default function SwaponsWorldApp() {
     setShowAddFileModal(false);
   };
 
-  const toggleFileStatus = (fileId: string) => {
+  // File Quick Status Switch
+  const toggleFileStatus = (fileId: string, targetStatus?: StudioFile["status"]) => {
     const updated = files.map((f) => {
       if (f.id === fileId) {
         const nextStatus: StudioFile["status"] =
-          f.status === "ready_for_review"
+          targetStatus !== undefined
+            ? targetStatus
+            : f.status === "ready_for_review"
             ? "approved"
             : f.status === "approved"
             ? "needs_revision"
@@ -723,6 +870,16 @@ export default function SwaponsWorldApp() {
       return f;
     });
     updateFiles(updated);
+  };
+
+  // Handle Edit File Save
+  const handleSaveEditFile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFile) return;
+
+    const updated = files.map((f) => (f.id === editingFile.id ? editingFile : f));
+    updateFiles(updated);
+    setEditingFile(null);
   };
 
   const deleteFile = (fileId: string) => {
@@ -745,7 +902,7 @@ export default function SwaponsWorldApp() {
   const getTaskColorMeta = (task: SwaponTask) => {
     if (task.completed) {
       return {
-        badgeText: "✅ কাজ সম্পন্ন (Done)",
+        badgeText: "✅ অ্যাপ্রুভড ও সম্পন্ন (Done)",
         badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800",
         borderAccent: "border-l-4 border-l-emerald-500",
         cardBg: "bg-emerald-50/20 dark:bg-emerald-950/10",
@@ -793,13 +950,20 @@ export default function SwaponsWorldApp() {
     };
   };
 
-  // Color Filtered Tasks
-  const filteredTasks = roleTasks.filter((t) => {
+  // Separation of Pending vs Approved Tasks
+  const pendingTasks = roleTasks.filter((t) => !t.completed);
+  const approvedTasks = roleTasks.filter((t) => t.completed);
+
+  // Active Tasks based on Tab & Filter
+  const tasksInActiveSection = taskSectionTab === "pending" ? pendingTasks : approvedTasks;
+
+  const filteredTasks = tasksInActiveSection.filter((t) => {
     if (statusColorFilter === "all") return true;
     const meta = getTaskColorMeta(t);
     return meta.categoryType === statusColorFilter;
   });
 
+  // Files Role Filtering & Separation
   const roleFiles = files.filter((f) => {
     if (isHead) {
       if (adminViewFilter === "all") return true;
@@ -817,9 +981,12 @@ export default function SwaponsWorldApp() {
     return matchesSearch && matchesType;
   });
 
+  const pendingFiles = displayFiles.filter((f) => f.status !== "approved");
+  const approvedFiles = displayFiles.filter((f) => f.status === "approved");
+
   // Task Counts for Dashboard
   const totalTasks = roleTasks.length;
-  const completedTasks = roleTasks.filter((t) => t.completed).length;
+  const completedTasks = approvedTasks.length;
   const notDoneTasks = roleTasks.filter((t) => !t.completed && t.statusState === "not_done").length;
   const todayActionTasks = roleTasks.filter((t) => !t.completed && (t.deadlineCategory === "today" || t.isUrgent)).length;
   const weekTasks = roleTasks.filter((t) => !t.completed && (t.deadlineCategory === "7days" || t.deadlineCategory === "3days")).length;
@@ -929,7 +1096,7 @@ export default function SwaponsWorldApp() {
                     <span>অ্যাডমিন অটোমেশন হাব</span>
                   </div>
                   <p className="text-[11px] text-stone-500 dark:text-zinc-400 leading-relaxed">
-                    অ্যাডমিন হিসেবে ১-ক্লিক অটোমেশন দিয়ে রিলস, ভয়েসওভার বা ৭ দিনের শিডিউলে কাজ অ্যাসাইন করতে পারবেন।
+                    অ্যাডমিন হিসেবে ১-ক্লিক অটোমেশন দিয়ে রেফারেন্স ভিডিও, ভয়েসওভার স্ক্রিপ্ট ও ডেডলাইন সেট করে কাজ বুঝিয়ে দিন।
                   </p>
                 </div>
 
@@ -1000,8 +1167,8 @@ export default function SwaponsWorldApp() {
               </div>
               <p className="text-[11px] text-stone-500 dark:text-zinc-400">
                 {isHead
-                  ? "অ্যাডমিন কন্ট্রোল • স্মার্ট অটোমেশন দিয়ে কাজ সেট করুন ও তদারকি করুন"
-                  : "টিম মেম্বার ভিউ • আজকের কাজ, পেন্ডিং কাজ ও রেন্ডার ফাইলসমূহ"}
+                  ? "অ্যাডমিন কন্ট্রোল • রেফারেন্স ভিডিও ও স্ক্রিপ্টসহ কাজ অ্যাসাইন ও তদারকি"
+                  : "টিম মেম্বার ভিউ • আজকের কাজ, স্ক্রিপ্ট কপি ও ড্রাইভ ফাইল জমা"}
               </p>
             </div>
           </div>
@@ -1021,24 +1188,26 @@ export default function SwaponsWorldApp() {
               <span className="hidden sm:inline">লগআউট</span>
             </button>
 
-            {isHead && (
-              <>
-                <button
-                  onClick={() => setShowAddFileModal(true)}
-                  className="px-3 py-1.5 rounded bg-stone-200 hover:bg-stone-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>+ ফাইল দিন</span>
-                </button>
+            {/* Team Members Upload Button */}
+            {!isHead && (
+              <button
+                onClick={() => setShowAddFileModal(true)}
+                className="px-3 py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>+ ডেলিভারেবল জমা দিন</span>
+              </button>
+            )}
 
-                <button
-                  onClick={() => setShowAddTaskModal(true)}
-                  className="px-3.5 py-1.5 rounded bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
-                >
-                  <Zap className="h-3.5 w-3.5 text-amber-400" />
-                  <span>+ কাজ বুঝিয়ে দিন (অটোমেশন)</span>
-                </button>
-              </>
+            {/* Admin Controls: ONLY Assignment Button (ফাইল দিন বাটন রিমুভড!) */}
+            {isHead && (
+              <button
+                onClick={() => setShowAddTaskModal(true)}
+                className="px-3.5 py-1.5 rounded bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              >
+                <Zap className="h-3.5 w-3.5 text-amber-400" />
+                <span>+ নতুন অ্যাসাইনমেন্ট (অটোমেশন)</span>
+              </button>
             )}
           </div>
         </div>
@@ -1074,7 +1243,7 @@ export default function SwaponsWorldApp() {
       </header>
 
       {/* Main Studio Body */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-7 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-7 space-y-9">
         {/* ========================================================= */}
         {/* SECTION 1: উপরে ড্যাশবোর্ড (TOP DASHBOARD SECTION)       */}
         {/* ========================================================= */}
@@ -1105,10 +1274,13 @@ export default function SwaponsWorldApp() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs pt-3 md:pt-0">
                 {/* 1. Yellow/Amber: Today Action */}
                 <div
-                  onClick={() => setStatusColorFilter(statusColorFilter === "today" ? "all" : "today")}
+                  onClick={() => {
+                    setTaskSectionTab("pending");
+                    setStatusColorFilter(statusColorFilter === "today" ? "all" : "today");
+                  }}
                   className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
-                    statusColorFilter === "today"
-                      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40"
+                    statusColorFilter === "today" && taskSectionTab === "pending"
+                      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-500"
                       : "border-amber-200/80 bg-amber-50/50 hover:bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20"
                   }`}
                 >
@@ -1123,10 +1295,13 @@ export default function SwaponsWorldApp() {
 
                 {/* 2. Red/Rose: Not Done / Pending */}
                 <div
-                  onClick={() => setStatusColorFilter(statusColorFilter === "not_done" ? "all" : "not_done")}
+                  onClick={() => {
+                    setTaskSectionTab("pending");
+                    setStatusColorFilter(statusColorFilter === "not_done" ? "all" : "not_done");
+                  }}
                   className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
-                    statusColorFilter === "not_done"
-                      ? "border-rose-500 bg-rose-50 dark:bg-rose-950/40"
+                    statusColorFilter === "not_done" && taskSectionTab === "pending"
+                      ? "border-rose-500 bg-rose-50 dark:bg-rose-950/40 ring-1 ring-rose-500"
                       : "border-rose-200/80 bg-rose-50/50 hover:bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20"
                   }`}
                 >
@@ -1141,10 +1316,13 @@ export default function SwaponsWorldApp() {
 
                 {/* 3. Purple: 7 Days Pipeline */}
                 <div
-                  onClick={() => setStatusColorFilter(statusColorFilter === "week" ? "all" : "week")}
+                  onClick={() => {
+                    setTaskSectionTab("pending");
+                    setStatusColorFilter(statusColorFilter === "week" ? "all" : "week");
+                  }}
                   className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
-                    statusColorFilter === "week"
-                      ? "border-purple-500 bg-purple-50 dark:bg-purple-950/40"
+                    statusColorFilter === "week" && taskSectionTab === "pending"
+                      ? "border-purple-500 bg-purple-50 dark:bg-purple-950/40 ring-1 ring-purple-500"
                       : "border-purple-200/80 bg-purple-50/50 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-purple-950/20"
                   }`}
                 >
@@ -1157,18 +1335,21 @@ export default function SwaponsWorldApp() {
                   </span>
                 </div>
 
-                {/* 4. Green/Emerald: Completed */}
+                {/* 4. Green/Emerald: Completed & Approved */}
                 <div
-                  onClick={() => setStatusColorFilter(statusColorFilter === "completed" ? "all" : "completed")}
+                  onClick={() => {
+                    setTaskSectionTab("approved");
+                    setStatusColorFilter("all");
+                  }}
                   className={`p-2.5 rounded-lg border cursor-pointer transition-all ${
-                    statusColorFilter === "completed"
-                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40"
+                    taskSectionTab === "approved"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-500"
                       : "border-emerald-200/80 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
                   }`}
                 >
                   <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>কাজ সম্পন্ন</span>
+                    <span>অ্যাপ্রুভড ও সম্পন্ন</span>
                   </div>
                   <span className="text-lg font-bold font-studio-mono text-emerald-900 dark:text-emerald-200 block mt-0.5">
                     {completedTasks} টি
@@ -1188,22 +1369,63 @@ export default function SwaponsWorldApp() {
             </div>
           </div>
 
-          {/* Color-Coded Task List & Quick Filter Chips */}
-          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-4.5 space-y-3.5 shadow-2xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100 dark:border-zinc-800">
+          {/* ========================================================================= */}
+          {/* TASKS SECTION: SEPARATED INTO PENDING & APPROVED ARCHIVE                  */}
+          {/* ========================================================================= */}
+          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 p-4.5 space-y-4 shadow-2xs">
+            {/* Main Section Header + Two Distinct Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-zinc-800">
               <div>
-                <h3 className="text-sm font-bold text-zinc-950 dark:text-white">
-                  {session.role === "video_editor"
-                    ? "ভিডিও এডিটিং কাজের শিডিউল (রিলস, ভয়েসওভার ও লং ভিডিও)"
-                    : "কাজের স্ট্যাটাস ও শিডিউল"}
+                <h3 className="text-sm font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+                  <span>{session.role === "video_editor" ? "ভিডিও এডিটিং কাজের হাব" : "স্টুডিও কাজের হাব"}</span>
+                  <span className="text-xs font-normal text-stone-500">
+                    ({roleTasks.length} টি মোট অ্যাসাইনমেন্ট)
+                  </span>
                 </h3>
                 <p className="text-[11px] text-stone-500">
-                  রং দেখে কাজের অবস্থা বুঝুন (হলুদ = আজই করণীয়, লাল = কাজ হয় নাই, বেগুনি = ৭ দিন, সবুজ = সম্পন্ন)।
+                  কাজ সম্পন্ন হলে স্বয়ংক্রিয়ভাবে অ্যাপ্রুভড আর্কাইভে জমা হবে। ভুল করে টিক দিলে এডিট করে পুনরায় ফিরিয়ে নিতে পারবেন।
                 </p>
               </div>
 
-              {/* Color Filter Tabs */}
-              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-medium">
+              {/* TWO DISTINCT WORKSPACE TABS */}
+              <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800/80 text-xs font-semibold shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTaskSectionTab("pending");
+                    setStatusColorFilter("all");
+                  }}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                    taskSectionTab === "pending"
+                      ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900"
+                  }`}
+                >
+                  <Hourglass className="h-3.5 w-3.5 text-amber-500" />
+                  <span>চলমান ও পেন্ডিং ({pendingTasks.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTaskSectionTab("approved");
+                    setStatusColorFilter("all");
+                  }}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                    taskSectionTab === "approved"
+                      ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs"
+                      : "text-stone-500 hover:text-zinc-900"
+                  }`}
+                >
+                  <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>অ্যাপ্রুভড ও সম্পন্ন আর্কাইভ ({approvedTasks.length})</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Filter Chips (Available in Pending Tab) */}
+            {taskSectionTab === "pending" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-medium pb-1">
                 <button
                   onClick={() => setStatusColorFilter("all")}
                   className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
@@ -1212,7 +1434,7 @@ export default function SwaponsWorldApp() {
                       : "text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800"
                   }`}
                 >
-                  সব ({roleTasks.length})
+                  সব পেন্ডিং ({pendingTasks.length})
                 </button>
                 <button
                   onClick={() => setStatusColorFilter("today")}
@@ -1223,7 +1445,7 @@ export default function SwaponsWorldApp() {
                   }`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  আজকের কাজ ({todayActionTasks})
+                  আজকের জরুরি কাজ ({todayActionTasks})
                 </button>
                 <button
                   onClick={() => setStatusColorFilter("not_done")}
@@ -1234,7 +1456,7 @@ export default function SwaponsWorldApp() {
                   }`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                  হয় নাই ({notDoneTasks})
+                  কাজ হয় নাই ({notDoneTasks})
                 </button>
                 <button
                   onClick={() => setStatusColorFilter("week")}
@@ -1245,119 +1467,183 @@ export default function SwaponsWorldApp() {
                   }`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-                  ৭ দিন ({weekTasks})
-                </button>
-                <button
-                  onClick={() => setStatusColorFilter("completed")}
-                  className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer flex items-center gap-1 ${
-                    statusColorFilter === "completed"
-                      ? "bg-emerald-600 text-white"
-                      : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40"
-                  }`}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  সম্পন্ন ({completedTasks})
+                  আগামী ৭ দিন ({weekTasks})
                 </button>
               </div>
-            </div>
+            )}
 
-            {/* Render Color-Coded Tasks */}
+            {/* Task List Rendering */}
             {filteredTasks.length === 0 ? (
-              <p className="text-xs text-stone-400 py-4 text-center">
-                এই ক্যাটাগরিতে কোনো কাজ পাওয়া যায়নি।
-              </p>
+              <div className="p-8 text-center rounded-lg bg-stone-50/60 dark:bg-zinc-800/40 border border-stone-200/50 dark:border-zinc-800">
+                <p className="text-xs text-stone-500 font-medium">
+                  {taskSectionTab === "approved"
+                    ? "কোনো কাজ এখনো অ্যাপ্রুভড আর্কাইভে জমা হয়নি। কাজ সম্পন্ন হলে এখানে প্রদর্শিত হবে।"
+                    : "এই ফিল্টারে কোনো পেন্ডিং কাজ পাওয়া যায়নি।"}
+                </p>
+              </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {filteredTasks.map((task) => {
                   const meta = getTaskColorMeta(task);
 
                   return (
                     <div
                       key={task.id}
-                      className={`p-3.5 sm:p-4 rounded-xl border transition-all ${meta.borderAccent} ${meta.cardBg} border-stone-200/70 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group`}
+                      className={`p-4 rounded-xl border transition-all ${meta.borderAccent} ${meta.cardBg} border-stone-200/70 dark:border-zinc-800 flex flex-col justify-between gap-3 group`}
                     >
-                      {/* Left: Checkbox + Title + Description */}
-                      <div className="flex items-start gap-3 min-w-0 flex-1">
-                        {/* Interactive Checkbox */}
-                        <button
-                          onClick={() => toggleTask(task.id)}
-                          className={`mt-0.5 h-5 w-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                            task.completed
-                              ? "bg-emerald-600 border-emerald-600 text-white"
-                              : "border-stone-300 dark:border-zinc-600 hover:border-zinc-950 bg-white dark:bg-zinc-800"
-                          }`}
-                          title={task.completed ? "Mark incomplete" : "Mark as done"}
-                        >
-                          {task.completed && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                        </button>
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        {/* Left: Checkbox + Title + Badges */}
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <button
+                            onClick={() => toggleTask(task.id)}
+                            className={`mt-0.5 h-5 w-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                              task.completed
+                                ? "bg-emerald-600 border-emerald-600 text-white"
+                                : "border-stone-300 dark:border-zinc-600 hover:border-zinc-950 bg-white dark:bg-zinc-800"
+                            }`}
+                            title={task.completed ? "পেন্ডিংয়ে ফেরত নিতে ক্লিক করুন" : "কাজ সম্পন্ন চিহ্নিত করতে ক্লিক করুন"}
+                          >
+                            {task.completed && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                          </button>
 
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              onClick={() => toggleTask(task.id)}
-                              className={`text-sm font-semibold cursor-pointer ${
-                                task.completed
-                                  ? "line-through text-stone-400 dark:text-zinc-500 font-normal"
-                                  : "text-zinc-950 dark:text-white"
-                              }`}
-                            >
-                              {task.title}
-                            </span>
-
-                            {/* Color-Coded Status Badge */}
-                            <span className={`text-[10px] font-studio-mono px-2 py-0.5 rounded border font-semibold ${meta.badgeClass}`}>
-                              {meta.badgeText}
-                            </span>
-
-                            {isHead && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 font-medium">
-                                {task.assigneeName}
+                          <div className="min-w-0 space-y-1.5 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                onClick={() => toggleTask(task.id)}
+                                className={`text-sm font-semibold cursor-pointer ${
+                                  task.completed
+                                    ? "line-through text-stone-400 dark:text-zinc-500 font-normal"
+                                    : "text-zinc-950 dark:text-white"
+                                }`}
+                              >
+                                {task.title}
                               </span>
+
+                              {/* Color-Coded Status Badge */}
+                              <span className={`text-[10px] font-studio-mono px-2 py-0.5 rounded border font-semibold ${meta.badgeClass}`}>
+                                {meta.badgeText}
+                              </span>
+
+                              {isHead && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 font-medium">
+                                  {task.assigneeName}
+                                </span>
+                              )}
+
+                              {/* Reference Video Pill Button */}
+                              {task.referenceVideoUrl && (
+                                <a
+                                  href={task.referenceVideoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-[11px] font-medium hover:bg-blue-100 transition-colors"
+                                >
+                                  <Film className="h-3 w-3" />
+                                  <span>🎥 রেফারেন্স ভিডিও ↗</span>
+                                </a>
+                              )}
+                            </div>
+
+                            {/* Brief / Notes */}
+                            {task.notes && (
+                              <p className="text-xs text-stone-600 dark:text-zinc-400 leading-relaxed font-normal">
+                                <strong className="text-zinc-800 dark:text-zinc-200 font-medium">নির্দেশনা:</strong> {task.notes}
+                              </p>
+                            )}
+
+                            {/* Location & Time for Videographer */}
+                            {task.location && (
+                              <div className="flex items-center gap-2 text-[11px] text-stone-500 pt-0.5">
+                                <span className="flex items-center gap-1 text-stone-600 dark:text-zinc-300 font-medium">
+                                  <MapPin className="h-3 w-3 text-stone-400" />
+                                  {task.location}
+                                </span>
+                                {task.shootTime && <span>• {task.shootTime}</span>}
+                              </div>
+                            )}
+
+                            {/* Full Script / Voiceover Text Box with 1-Click Copy */}
+                            {task.scriptText && (
+                              <div className="mt-2 p-3 rounded-lg bg-white/80 dark:bg-zinc-900/80 border border-stone-200/90 dark:border-zinc-800 space-y-1.5">
+                                <div className="flex items-center justify-between text-[11px] font-semibold text-stone-600 dark:text-zinc-300 pb-1 border-b border-stone-100 dark:border-zinc-800">
+                                  <span className="flex items-center gap-1">
+                                    <FileText className="h-3.5 w-3.5 text-amber-500" />
+                                    <span>স্ক্রিপ্ট / ভয়েসওভার টেক্সট ফাইল:</span>
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyScript(task.id, task.scriptText || "")}
+                                    className="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer"
+                                    title="পুরো স্ক্রিপ্ট কপি করুন"
+                                  >
+                                    {copiedTaskId === task.id ? (
+                                      <>
+                                        <CheckCheck className="h-3 w-3 text-emerald-600" />
+                                        <span className="text-emerald-600 font-semibold">কপি হয়েছে!</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="h-3 w-3" />
+                                        <span>কপি করুন</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                                <pre className="text-xs font-sans text-stone-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed select-text">
+                                  {task.scriptText}
+                                </pre>
+                              </div>
                             )}
                           </div>
-
-                          {task.notes && (
-                            <p className="text-xs text-stone-600 dark:text-zinc-400 leading-relaxed font-normal">
-                              <strong className="text-zinc-800 dark:text-zinc-200 font-medium">নির্দেশনা:</strong> {task.notes}
-                            </p>
-                          )}
-
-                          {task.location && (
-                            <div className="flex items-center gap-2 text-[11px] text-stone-500 pt-0.5">
-                              <span className="flex items-center gap-1 text-stone-600 dark:text-zinc-300 font-medium">
-                                <MapPin className="h-3 w-3 text-stone-400" />
-                                {task.location}
-                              </span>
-                              {task.shootTime && <span>• {task.shootTime}</span>}
-                            </div>
-                          )}
                         </div>
-                      </div>
 
-                      {/* Right: Due Date + Status Quick Switcher */}
-                      <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 text-xs pt-1 sm:pt-0 border-t sm:border-t-0 border-stone-200/40">
-                        <span className="font-studio-mono text-[11px] text-stone-500 font-medium">
-                          {task.dueDate}
-                        </span>
+                        {/* Right: Due Date & Action Buttons */}
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-200/40">
+                          <span className="font-studio-mono text-[11px] text-stone-500 font-medium">
+                            {task.dueDate}
+                          </span>
 
-                        {/* Status Toggle Switcher */}
-                        <button
-                          onClick={() => cycleTaskStatus(task.id)}
-                          className="px-2.5 py-1 rounded text-[11px] font-medium bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 hover:border-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
-                          title="স্ট্যাটাস পরিবর্তন করুন (হয় নাই / আজকের কাজ / সম্পন্ন)"
-                        >
-                          স্ট্যাটাস বদলান ↺
-                        </button>
+                          <div className="flex items-center gap-1.5">
+                            {/* If task is completed (accidental approval fix): Direct 1-Click Revert Button */}
+                            {task.completed ? (
+                              <button
+                                onClick={() => revertTaskToPending(task.id)}
+                                className="px-2.5 py-1 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 transition-colors cursor-pointer flex items-center gap-1"
+                                title="ভুল করে সম্পন্ন হলে পেন্ডিংয়ে ফেরত নিন"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                <span>রিভার্ট (পেন্ডিং করুন)</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => cycleTaskStatus(task.id)}
+                                className="px-2 py-1 rounded text-[11px] font-medium bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 hover:border-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                                title="স্ট্যাটাস পরিবর্তন করুন (হয় নাই / আজকের কাজ / সম্পন্ন)"
+                              >
+                                স্ট্যাটাস ↺
+                              </button>
+                            )}
 
-                        {isHead && (
-                          <button
-                            onClick={() => deleteTask(task.id)}
-                            className="p-1 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title="কাজ ডিলিট করুন"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                            {/* Edit Button (Every task has an edit button) */}
+                            <button
+                              onClick={() => setEditingTask(task)}
+                              className="px-2.5 py-1 rounded text-[11px] font-medium bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white border border-stone-200/80 dark:border-zinc-700 transition-colors cursor-pointer flex items-center gap-1"
+                              title="কাজের বিবরণ বা স্ট্যাটাস এডিট করুন"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              <span>এডিট</span>
+                            </button>
+
+                            {isHead && (
+                              <button
+                                onClick={() => deleteTask(task.id)}
+                                className="p-1 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                title="কাজ ডিলিট করুন"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1368,10 +1654,10 @@ export default function SwaponsWorldApp() {
         </section>
 
         {/* ========================================================= */}
-        {/* SECTION 2: নিচে সব ফাইলসমূহ (BOTTOM FILES & DELIVERABLES) */}
+        {/* SECTION 2: নিচে সব ফাইলসমূহ (FILES & DELIVERABLES HUB)     */}
         {/* ========================================================= */}
         <section className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-stone-200 dark:border-zinc-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-200 dark:border-zinc-800">
             <div>
               <h2 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                 <span>প্রোডাকশন ফাইলস ও ডেলিভারেবলস</span>
@@ -1381,12 +1667,49 @@ export default function SwaponsWorldApp() {
               </h2>
               <p className="text-xs text-stone-500">
                 {isHead
-                  ? "সকল সদস্যের ফাইনাল রেন্ডার, সোর্স ফাইল ও ড্রাইভ লিংক।"
+                  ? "টিমের ফাইনাল রেন্ডার ও ড্রাইভ ফাইল। কাজ অ্যাপ্রুভ করলে স্বয়ংক্রিয়ভাবে কমপ্লিট আর্কাইভে জমা হবে।"
                   : `শুধুমাত্র ${session.displayName}-এর প্রজেক্ট ও রেন্ডার ফাইলসমূহ।`}
               </p>
             </div>
 
-            {/* Search & Filter */}
+            {/* TWO DISTINCT FILE TABS (Pending Review vs Approved Archive) */}
+            <div className="flex items-center p-1 rounded-lg bg-stone-100 dark:bg-zinc-800 text-xs font-semibold shrink-0">
+              <button
+                type="button"
+                onClick={() => setFileSectionTab("pending")}
+                className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                  fileSectionTab === "pending"
+                    ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-2xs"
+                    : "text-stone-500 hover:text-zinc-900"
+                }`}
+              >
+                <Hourglass className="h-3.5 w-3.5 text-amber-500" />
+                <span>পেন্ডিং ও চলমান ফাইল ({pendingFiles.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFileSectionTab("approved")}
+                className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                  fileSectionTab === "approved"
+                    ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs"
+                    : "text-stone-500 hover:text-zinc-900"
+                }`}
+              >
+                <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
+                <span>অ্যাপ্রুভড ও কমপ্লিট ফাইলস আর্কাইভ ({approvedFiles.length})</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Filter Toolbar */}
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span className="text-stone-500 text-[11px]">
+              {fileSectionTab === "pending"
+                ? "⏳ এই সেকশনের ফাইলগুলো এখনও রিভিউ বা সংশোধনে আছে।"
+                : "🏆 এই সেকশনের ফাইলগুলো সম্পন্ন ও হেড দ্বারা অ্যাপ্রুভড।"}
+            </span>
+
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
@@ -1395,7 +1718,7 @@ export default function SwaponsWorldApp() {
                   value={fileSearch}
                   onChange={(e) => setFileSearch(e.target.value)}
                   placeholder="ফাইল খুঁজুন..."
-                  className="pl-8 pr-3 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900 w-36 sm:w-48"
+                  className="pl-8 pr-3 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900 w-36 sm:w-44"
                 />
               </div>
 
@@ -1404,7 +1727,7 @@ export default function SwaponsWorldApp() {
                 onChange={(e) => setFileTypeFilter(e.target.value)}
                 className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none"
               >
-                <option value="all">সব ফাইল</option>
+                <option value="all">সব টাইপ</option>
                 <option value="video">ভিডিও (.mp4)</option>
                 <option value="project">প্রজেক্ট (.prproj/.ai)</option>
                 <option value="image">ইমেজ (.psd)</option>
@@ -1413,20 +1736,24 @@ export default function SwaponsWorldApp() {
             </div>
           </div>
 
-          {/* Files Grid */}
-          {displayFiles.length === 0 ? (
+          {/* Files Grid Rendering */}
+          {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).length === 0 ? (
             <div className="p-10 text-center rounded-xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 space-y-1.5">
               <HardDrive className="h-8 w-8 text-stone-300 mx-auto" />
               <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                কোনো ফাইল পাওয়া যায়নি
+                {fileSectionTab === "pending"
+                  ? "কোনো পেন্ডিং বা রিভিউ ফাইল নেই"
+                  : "কোনো ফাইল এখনো অ্যাপ্রুভড আর্কাইভে জমা হয়নি"}
               </h4>
               <p className="text-xs text-stone-400 max-w-sm mx-auto">
-                এই ডিপার্টমেন্টের কোনো ফাইল বা ক্লাউড লিংক এখনো আপলোড করা হয়নি।
+                {fileSectionTab === "pending"
+                  ? "টিম মেম্বাররা নতুন রেন্ডার লিংক বা ফাইল জমা দিলে এখানে প্রদর্শিত হবে।"
+                  : "পেন্ডিং ফাইল এপ্রুভ করলে সাথে সাথে এই আর্কাইভে স্থানান্তরিত হবে।"}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {displayFiles.map((file) => {
+              {(fileSectionTab === "pending" ? pendingFiles : approvedFiles).map((file) => {
                 const isVideo = file.fileType === "video";
                 const isProject = file.fileType === "project";
                 const isFolder = file.fileType === "folder";
@@ -1461,23 +1788,23 @@ export default function SwaponsWorldApp() {
                         </div>
 
                         {/* Status Badge */}
-                        <button
-                          onClick={() => isHead && toggleFileStatus(file.id)}
-                          className={`text-[10px] font-studio-mono uppercase px-2 py-0.5 rounded transition-colors border ${
-                            file.status === "approved"
-                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`text-[10px] font-studio-mono uppercase px-2 py-0.5 rounded border font-semibold ${
+                              file.status === "approved"
+                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                                : file.status === "needs_revision"
+                                ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                                : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                            }`}
+                          >
+                            {file.status === "approved"
+                              ? "অ্যাপ্রুভড"
                               : file.status === "needs_revision"
-                              ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
-                              : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
-                          } ${isHead ? "cursor-pointer" : "cursor-default"}`}
-                          title={isHead ? "স্ট্যাটাস পরিবর্তন করতে ক্লিক করুন" : ""}
-                        >
-                          {file.status === "approved"
-                            ? "অ্যাপ্রুভড"
-                            : file.status === "needs_revision"
-                            ? "সংশোধন প্রয়োজন"
-                            : "রিভিউ পেন্ডিং"}
-                        </button>
+                              ? "সংশোধন প্রয়োজন"
+                              : "রিভিউ পেন্ডিং"}
+                          </span>
+                        </div>
                       </div>
 
                       <h4 className="text-sm font-semibold text-zinc-950 dark:text-white mt-2.5">
@@ -1491,6 +1818,7 @@ export default function SwaponsWorldApp() {
                       )}
                     </div>
 
+                    {/* Bottom Action Bar */}
                     <div className="pt-2.5 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 text-[11px] text-stone-400">
                         <span>{file.ownerName}</span>
@@ -1498,7 +1826,41 @@ export default function SwaponsWorldApp() {
                         <span>{file.uploadedAt}</span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {/* If in Pending: Admin 1-Click Approve Button */}
+                        {isHead && file.status !== "approved" && (
+                          <button
+                            onClick={() => toggleFileStatus(file.id, "approved")}
+                            className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="ফাইল অ্যাপ্রুভ করুন — সরাসরি কমপ্লিট আর্কাইভে যাবে"
+                          >
+                            <Check className="h-3 w-3 stroke-[3]" />
+                            <span>অ্যাপ্রুভ করুন</span>
+                          </button>
+                        )}
+
+                        {/* If in Approved: Direct Revert Button in case of accidental approval */}
+                        {isHead && file.status === "approved" && (
+                          <button
+                            onClick={() => toggleFileStatus(file.id, "ready_for_review")}
+                            className="px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="ভুল করে এপ্রুভ হলে পেন্ডিংয়ে ফেরত নিন"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            <span>রিভার্ট</span>
+                          </button>
+                        )}
+
+                        {/* Edit File Button */}
+                        <button
+                          onClick={() => setEditingFile(file)}
+                          className="px-2 py-1 rounded bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                          title="ফাইলের তথ্য বা স্ট্যাটাস এডিট করুন"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          <span>এডিট</span>
+                        </button>
+
                         <a
                           href={file.driveUrl}
                           target="_blank"
@@ -1506,7 +1868,7 @@ export default function SwaponsWorldApp() {
                           className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-xs font-medium flex items-center gap-1 transition-colors"
                         >
                           <ExternalLink className="h-3 w-3" />
-                          <span>ড্রাইভ লিংক</span>
+                          <span>ড্রাইভ</span>
                         </a>
 
                         {isHead && (
@@ -1538,10 +1900,10 @@ export default function SwaponsWorldApp() {
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-500" />
-                  <span>স্মার্ট অটোমেশন — নতুন কাজ অ্যাসাইন করুন</span>
+                  <span>স্মার্ট অটোমেশন — নতুন কাজ বুঝিয়ে দিন</span>
                 </h3>
                 <p className="text-xs text-stone-400">
-                  নিচের অটোমেশন বাটনগুলোতে ক্লিক করলেই রিলস, ভয়েসওভার বা ৭ দিনের শিডিউল একা একাই পূরণ হয়ে যাবে।
+                  নিচের অটোমেশন বাটনে ক্লিক করলে রেফারেন্স ভিডিও, ভয়েসওভার স্ক্রিপ্ট ও সময় একা একাই পূরণ হয়ে যাবে।
                 </p>
               </div>
               <button
@@ -1566,7 +1928,7 @@ export default function SwaponsWorldApp() {
                   <span className="text-xs font-bold text-amber-900 dark:text-amber-300 block">
                     📱 রিলস ও শর্টস (৯:১৬)
                   </span>
-                  <span className="text-[10px] text-stone-500 block">আজকের জরুরি কাজ</span>
+                  <span className="text-[10px] text-stone-500 block">ভিডিও + স্ক্রিপ্ট অটো</span>
                 </button>
 
                 <button
@@ -1577,7 +1939,7 @@ export default function SwaponsWorldApp() {
                   <span className="text-xs font-bold text-blue-900 dark:text-blue-300 block">
                     🎙️ ভয়েসওভার ও সাউন্ড
                   </span>
-                  <span className="text-[10px] text-stone-500 block">আজ রাত ৮টা</span>
+                  <span className="text-[10px] text-stone-500 block">পূর্ণ স্ক্রিপ্ট সহ</span>
                 </button>
 
                 <button
@@ -1712,7 +2074,7 @@ export default function SwaponsWorldApp() {
                     }}
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                   >
-                    <option value="video_editor">🎬 ভিডিও এডিটর (যে কেউ নিতে পারবে)</option>
+                    <option value="video_editor">🎬 ভিডিও এডিটর (সব এডিটর একসাথে দেখবে)</option>
                     <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
                     <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
                   </select>
@@ -1730,6 +2092,36 @@ export default function SwaponsWorldApp() {
                 </div>
               </div>
 
+              {/* 🎥 REFERENCE VIDEO URL FIELD */}
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1 flex items-center gap-1.5">
+                  <Film className="h-3.5 w-3.5 text-blue-500" />
+                  <span>রেফারেন্স ভিডিও লিংক (YouTube, Reels, TikTok বা ড্রাইভ লিংক)</span>
+                </label>
+                <input
+                  type="url"
+                  value={newReferenceVideoUrl}
+                  onChange={(e) => setNewReferenceVideoUrl(e.target.value)}
+                  placeholder="https://youtube.com/shorts/... অথবা গুগল ড্রাইভ রেফারেন্স ভিডিও লিংক"
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              {/* 📝 FULL SCRIPT / VOICEOVER TEXT FIELD */}
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1 flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-amber-500" />
+                  <span>স্ক্রিপ্ট বা টেক্সট ফাইল (পুরো স্ক্রিপ্ট / ভয়েস ওভার টেক্সট)</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={newScriptText}
+                  onChange={(e) => setNewScriptText(e.target.value)}
+                  placeholder="ভয়েসওভারের পুরো ডায়ালগ, হুক, বা টেক্সট স্ক্রিপ্ট এখানে পেস্ট করুন। টিম মেম্বাররা সরাসরি এটি কপি করতে পারবেন..."
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white leading-relaxed font-sans"
+                />
+              </div>
+
               {newDepartment === "shoot" && (
                 <div>
                   <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">শুটিং লোকেশন ও কল টাইম</label>
@@ -1745,14 +2137,13 @@ export default function SwaponsWorldApp() {
 
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  কাজের সম্পূর্ণ নির্দেশনা ও ব্রিফ *
+                  কাজের সাধারণ ব্রিফ ও নোটস
                 </label>
                 <textarea
                   rows={2}
-                  required
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
-                  placeholder="ভিডিও সাইজ, কাটস স্টাইল, কোন ফুটেজ ব্যবহার করবে বা ড্রাইভ লিংক বুঝিয়ে দিন..."
+                  placeholder="কাটস স্টাইল, কোন ফুটেজ ব্যবহার করবে বা ড্রাইভ লিংক বুঝিয়ে দিন..."
                   className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                 />
               </div>
@@ -1789,16 +2180,189 @@ export default function SwaponsWorldApp() {
         </div>
       )}
 
-      {/* ADMIN MODAL: ADD FILE */}
+      {/* ========================================================================= */}
+      {/* EDIT TASK MODAL (FOR EDITING & ACCIDENTAL APPROVAL REVERT)                */}
+      {/* ========================================================================= */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 my-8 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
+              <div>
+                <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+                  <Pencil className="h-4 w-4 text-blue-500" />
+                  <span>কাজের বিবরণ বা স্ট্যাটাস এডিট করুন</span>
+                </h3>
+                <p className="text-xs text-stone-400">
+                  ভুল করে অ্যাপ্রুভ হয়ে থাকলে স্ট্যাটাস পরিবর্তন করে পুনরায় পেন্ডিংয়ে নিতে পারবেন।
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingTask(null)}
+                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTask} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাজের শিরোনাম</label>
+                <input
+                  type="text"
+                  required
+                  value={editingTask.title}
+                  onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              {/* Status Switcher (Allows reverting accidental approval) */}
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                  কাজের অবস্থা / স্ট্যাটাস (Status)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: "not_done" })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      !editingTask.completed && editingTask.statusState === "not_done"
+                        ? "border-rose-500 bg-rose-50 text-rose-900 font-semibold dark:bg-rose-950 dark:text-rose-200"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                    }`}
+                  >
+                    🔴 কাজ হয় নাই / বাকি
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingTask({ ...editingTask, completed: false, statusState: undefined, isUrgent: true, deadlineCategory: "today" })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                      !editingTask.completed && editingTask.statusState !== "not_done"
+                        ? "border-amber-500 bg-amber-50 text-amber-900 font-semibold dark:bg-amber-950 dark:text-amber-200"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                    }`}
+                  >
+                    🟡 আজকের কাজ / পেন্ডিং
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingTask({ ...editingTask, completed: true, statusState: "completed" })}
+                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer col-span-2 sm:col-span-1 ${
+                      editingTask.completed
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold dark:bg-emerald-950 dark:text-emerald-200"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                    }`}
+                  >
+                    🟢 অ্যাপ্রুভড ও সম্পন্ন
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                  🎥 রেফারেন্স ভিডিও লিংক
+                </label>
+                <input
+                  type="url"
+                  value={editingTask.referenceVideoUrl || ""}
+                  onChange={(e) => setEditingTask({ ...editingTask, referenceVideoUrl: e.target.value })}
+                  placeholder="https://youtube.com/shorts/..."
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                  📝 সম্পূর্ণ স্ক্রিপ্ট বা ভয়েসওভার টেক্সট
+                </label>
+                <textarea
+                  rows={4}
+                  value={editingTask.scriptText || ""}
+                  onChange={(e) => setEditingTask({ ...editingTask, scriptText: e.target.value })}
+                  placeholder="সম্পূর্ণ স্ক্রিপ্ট এখানে পেস্ট করুন..."
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white font-sans"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সময়সীমা</label>
+                  <input
+                    type="text"
+                    value={editingTask.dueDate}
+                    onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কাকে দেওয়া</label>
+                  <select
+                    value={editingTask.assignee}
+                    onChange={(e) => {
+                      const val = e.target.value as TeamMember;
+                      const names: Record<TeamMember, string> = {
+                        all: "সবাই",
+                        head: "ক্রিয়েটিভ ডিরেক্টর",
+                        video_editor: "ভিডিও এডিটর",
+                        designer: "গ্রাফিক ডিজাইনার",
+                        videographer: "সিনেমাটোগ্রাফার / শুটার",
+                      };
+                      setEditingTask({ ...editingTask, assignee: val, assigneeName: names[val] });
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  >
+                    <option value="video_editor">🎬 ভিডিও এডিটর</option>
+                    <option value="designer">🎨 গ্রাফিক ডিজাইনার</option>
+                    <option value="videographer">📹 সিনেমাটোগ্রাফার / শুটার</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">সাধারণ নোটস ও ব্রিফ</label>
+                <textarea
+                  rows={2}
+                  value={editingTask.notes || ""}
+                  onChange={(e) => setEditingTask({ ...editingTask, notes: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingTask(null)}
+                  className="px-3.5 py-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+                >
+                  পরিবর্তন সেভ করুন
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TEAM MODAL: SUBMIT DELIVERABLE / FILE                                     */}
+      {/* ========================================================================= */}
       {showAddFileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-white">
-                  নতুন ড্রাইভ লিংক বা ফাইল যুক্ত করুন
+                  নতুন ডেলিভারেবল বা ড্রাইভ লিংক জমা দিন
                 </h3>
-                <p className="text-xs text-stone-400">টিমের মেম্বারদের জন্য সোর্স বা রেন্ডার ফাইল লিংক দিন</p>
+                <p className="text-xs text-stone-400">হেডের রিভিউ ও অ্যাপ্রুভালের জন্য প্রস্তুতকৃত কাজের লিংক দিন</p>
               </div>
               <button
                 onClick={() => setShowAddFileModal(false)}
@@ -1811,41 +2375,42 @@ export default function SwaponsWorldApp() {
             <form onSubmit={handleAddFile} className="space-y-3.5 text-xs">
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  ফাইলের শিরোনাম *
+                  কাজের শিরোনাম *
                 </label>
                 <input
                   type="text"
                   required
                   value={newFileTitle}
                   onChange={(e) => setNewFileTitle(e.target.value)}
-                  placeholder="যেমন: সামার কালেকশন ৯:১৬ রেন্ডার ড্রাফট"
+                  placeholder="যেমন: সামার রিলস ফাইনাল রেন্ডার ড্রাফট ৩"
                   className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">ফাইল নেম *</label>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">ফাইলের নাম *</label>
                   <input
                     type="text"
                     required
                     value={newFileName}
                     onChange={(e) => setNewFileName(e.target.value)}
-                    placeholder="যেমন: Summer_Reels_V1.mp4"
+                    placeholder="যেমন: Summer_Reels_V3_4K.mp4"
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">কার ফাইল *</label>
+                  <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">ফাইলের ধরন</label>
                   <select
-                    value={newAssignee}
-                    onChange={(e) => setNewAssignee(e.target.value as TeamMember)}
+                    value={newFileType}
+                    onChange={(e) => setNewFileType(e.target.value as any)}
                     className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                   >
-                    <option value="video_editor">ভিডিও এডিটর</option>
-                    <option value="designer">গ্রাফিক ডিজাইনার</option>
-                    <option value="videographer">সিনেমাটোগ্রাফার / শুটার</option>
+                    <option value="video">ভিডিও (.mp4)</option>
+                    <option value="project">প্রজেক্ট (.prproj / .aep)</option>
+                    <option value="image">ইমেজ (.psd / .jpg)</option>
+                    <option value="folder">ড্রাইভ ফোল্ডার</option>
                   </select>
                 </div>
               </div>
@@ -1862,6 +2427,17 @@ export default function SwaponsWorldApp() {
                 />
               </div>
 
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">হেডের জন্য কোনো নোট বা কমেন্ট</label>
+                <textarea
+                  rows={2}
+                  value={newFileNotes}
+                  onChange={(e) => setNewFileNotes(e.target.value)}
+                  placeholder="যেমন: কালার গ্রেডিং ও অডিও নরম্যালাইজ করা হয়েছে..."
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
               <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -1874,7 +2450,126 @@ export default function SwaponsWorldApp() {
                   type="submit"
                   className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold"
                 >
-                  ফাইল সেভ করুন
+                  ফাইল জমা দিন
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* EDIT FILE MODAL (FOR EDITING & ACCIDENTAL APPROVAL REVERT)                */}
+      {/* ========================================================================= */}
+      {editingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-stone-200 dark:border-zinc-800 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-zinc-800">
+              <div>
+                <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+                  <Pencil className="h-4 w-4 text-blue-500" />
+                  <span>ফাইল এডিট ও স্ট্যাটাস পরিবর্তন</span>
+                </h3>
+                <p className="text-xs text-stone-400">ভুল করে অ্যাপ্রুভ হয়ে থাকলে পুনরায় রিভিউ পেন্ডিংয়ে ফেরত নিতে পারবেন</p>
+              </div>
+              <button
+                onClick={() => setEditingFile(null)}
+                className="text-stone-400 hover:text-zinc-950 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditFile} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">ফাইলের শিরোনাম</label>
+                <input
+                  type="text"
+                  required
+                  value={editingFile.title}
+                  onChange={(e) => setEditingFile({ ...editingFile, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              {/* File Status Switcher */}
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
+                  ফাইলের অবস্থা / স্ট্যাটাস
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingFile({ ...editingFile, status: "ready_for_review" })}
+                    className={`p-2 rounded-lg border text-center transition-all cursor-pointer ${
+                      editingFile.status === "ready_for_review"
+                        ? "border-amber-500 bg-amber-50 text-amber-900 font-semibold dark:bg-amber-950 dark:text-amber-200"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                    }`}
+                  >
+                    ⏳ রিভিউ পেন্ডিং
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingFile({ ...editingFile, status: "needs_revision" })}
+                    className={`p-2 rounded-lg border text-center transition-all cursor-pointer ${
+                      editingFile.status === "needs_revision"
+                        ? "border-rose-500 bg-rose-50 text-rose-900 font-semibold dark:bg-rose-950 dark:text-rose-200"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                    }`}
+                  >
+                    ⚠️ সংশোধন প্রয়োজন
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingFile({ ...editingFile, status: "approved" })}
+                    className={`p-2 rounded-lg border text-center transition-all cursor-pointer ${
+                      editingFile.status === "approved"
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold dark:bg-emerald-950 dark:text-emerald-200"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:bg-zinc-800 dark:border-zinc-700"
+                    }`}
+                  >
+                    🏆 অ্যাপ্রুভড
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">ড্রাইভ লিংক</label>
+                <input
+                  type="url"
+                  required
+                  value={editingFile.driveUrl}
+                  onChange={(e) => setEditingFile({ ...editingFile, driveUrl: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">রিভিউ ও ফিডব্যাক নোটস</label>
+                <textarea
+                  rows={2}
+                  value={editingFile.notes || ""}
+                  onChange={(e) => setEditingFile({ ...editingFile, notes: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingFile(null)}
+                  className="px-3.5 py-1.5 rounded text-stone-600 hover:bg-stone-100 dark:text-zinc-400 font-medium"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold cursor-pointer shadow-2xs"
+                >
+                  পরিবর্তন সেভ করুন
                 </button>
               </div>
             </form>
